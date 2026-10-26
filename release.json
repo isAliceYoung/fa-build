@@ -1,6 +1,6 @@
 {
   "branch": "feature/CC",
-  "commit": "ba404f6d46e3a7716e87c9666d39da00ea6eede6",
+  "commit": "5fe678c2cd380f503f54c74265752c21b3fe4410",
   "entrypoint": "webdesktop-deploy/scripts/interactive_deploy.py",
   "entrypoint_sha256": "3ec20ef759a0ad619a359a4a04dd888b732513c86928d868b2c615f1e33f76ba",
   "repository": "git@github.com:isAliceYoung/fa.git",
