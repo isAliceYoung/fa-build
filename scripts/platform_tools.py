@@ -30,7 +30,9 @@ def run(args,timeout=1200):
 def capacity(memory,cpu,swap,free,mode):
     require(memory>=900*1024**2 and cpu>=1,'INSUFFICIENT_RAM_CPU')
     if mode=='local-test':require(memory>=1800*1024**2 and cpu>=2,'LOCAL_BUILD_REQUIRES_2CPU_2G_RAM')
-    require(free>= (12 if mode=='local-test' else 8)*1024**3,'INSUFFICIENT_PREPARATION_DISK')
+    # Account for already prepared Swap instead of repeatedly reserving it.
+    needed=10*1024**3+max(0,2*1024**3-swap) if mode=='local-test' else 8*1024**3
+    require(free>=needed,'INSUFFICIENT_PREPARATION_DISK')
     return dict(memory=memory,cpu=cpu,swap=swap,free=free)
 
 def initial(mode):
