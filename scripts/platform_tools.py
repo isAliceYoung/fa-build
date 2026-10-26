@@ -63,9 +63,17 @@ def node(private):
                 if 'NODE_VERSION_MISMATCH' not in str(error):raise
                 mismatch=True
     require(not mismatch,'NODE_VERSION_MISMATCH: existing binaries preserved; administrator review required')
-    require(not os.path.lexists(TOOLS),'UNKNOWN_TOOLCHAIN_ROOT')
-    private.PrivateSource(Path('/root/unused'),TOOLS,'git@github.com:isAliceYoung/fa.git').directory(TOOLS,create=True,private=False)
-    TOOLS.chmod(0o755)
+    guard=private.PrivateSource(Path('/root/unused'),TOOLS,'git@github.com:isAliceYoung/fa.git')
+    marker=TOOLS/'.bootstrap-owner'
+    marker_text='fa-build-node-toolchain\n'+NODE_NAME+'\n'+NODE_SHA256+'\n'
+    if os.path.lexists(TOOLS):
+        guard.directory(TOOLS,private=False)
+        require({p.name for p in TOOLS.iterdir()}=={marker.name},'UNKNOWN_TOOLCHAIN_ROOT')
+        guard.check_node(marker,private=True)
+        require(marker.read_text()==marker_text,'UNKNOWN_TOOLCHAIN_ROOT')
+    else:
+        guard.directory(TOOLS,create=True,private=False);TOOLS.chmod(0o755)
+        guard.write_new(marker,marker_text)
     require(not os.path.lexists(TOOLS/NODE_NAME),'UNKNOWN_TOOLCHAIN_DESTINATION')
     with tempfile.TemporaryDirectory(prefix='.node-',dir=TOOLS) as temp:
         work=Path(temp);archive=work/'node.tar.xz';h=hashlib.sha256();size=0

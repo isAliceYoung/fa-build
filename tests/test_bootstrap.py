@@ -83,4 +83,23 @@ class Interaction(unittest.TestCase):
         text=(ROOT/'scripts/status.py').read_text()
         for forbidden in ('subprocess','apt-get','mkdir','write_text','write_bytes','swapon'):self.assertNotIn(forbidden,text)
 
+    def test_failed_node_download_can_reenter_only_its_owned_empty_root(self):
+        with tempfile.TemporaryDirectory(prefix='node-retry-fixture-') as temp:
+            root=Path(temp)/'toolchain'
+            class Guard:
+                def directory(self,path,create=False,private=False):
+                    if create:path.mkdir()
+                def write_new(self,path,data):
+                    with path.open('x') as stream:stream.write(data)
+                def check_node(self,*args,**kwargs):pass  # Linux DAC is separately NOT RUN.
+            private=types.SimpleNamespace(PrivateSource=lambda *args:Guard())
+            with mock.patch.object(ui.tools,'TOOLS',root),mock.patch.object(ui.tools,'existing_node',side_effect=ValueError('NODE_VERSION_MISMATCH')), \
+                 mock.patch.object(ui.tools.urllib.request,'urlopen',side_effect=OSError('simulated network unavailable')) as download:
+                for _ in range(2):
+                    with self.assertRaisesRegex(OSError,'network unavailable'):ui.tools.node(private)
+                self.assertEqual(download.call_count,2)
+                (root/'unknown').write_text('preserve')
+                with self.assertRaisesRegex(ValueError,'UNKNOWN_TOOLCHAIN_ROOT'):ui.tools.node(private)
+                self.assertEqual((root/'unknown').read_text(),'preserve')
+
 if __name__=='__main__':unittest.main(verbosity=2)
