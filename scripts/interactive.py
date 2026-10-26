@@ -54,9 +54,16 @@ def flow(a,m,read=input):
     tools.initial(a.mode)
     print('WebDesktop Installer\n[1/9] Environment checking ... PASS')
     source=private.PrivateSource(KEYS,SOURCES/m['commit'],REPO,'feature/CC',m['commit'])
-    print('[2/9] GitHub Deploy Key ... READY\n\nPublic key:\n'+source.prepare())
-    print('\nhttps://github.com/isAliceYoung/fa/settings/keys\n请添加到 Deploy keys，并保持 Allow write access 未勾选。')
-    if not consent(read):print('未授权；没有构建或安装。');return False
+    tools.diag.begin('authorization')
+    if os.path.lexists(source.key) or os.path.lexists(source.key.with_suffix('.pub')):
+        # Do not call prepare(): missing/mismatched/unsafe pairs must never be
+        # silently regenerated or repaired in this reuse path.
+        with source.locked():source.verify_local();source.authorized()
+        print('[2/9] GitHub Deploy Key ... REUSED (local identity and live authorization verified)')
+    else:
+        print('[2/9] GitHub Deploy Key ... READY\n\nPublic key:\n'+source.prepare())
+        print('\nhttps://github.com/isAliceYoung/fa/settings/keys\n请添加到 Deploy keys，并保持 Allow write access 未勾选。')
+        if not consent(read):print('未授权；没有构建或安装。');return False
     repo=acquire(source)
     print('[3/9] GitHub authorization ... PASS')
     import hashlib
@@ -89,7 +96,6 @@ def main(argv=None):
 
 if __name__=='__main__':
     try:main()
-    except (KeyboardInterrupt,EOFError):raise SystemExit('Interrupted safely; inspect status before retrying.')
+    except (KeyboardInterrupt,EOFError) as error:tools.diag.report(error);raise SystemExit(1)
     except Exception as error:
-        code=error.code if isinstance(error,private.Failure) else type(error).__name__
-        print('STOP ['+code+']: '+str(error)[:240]+'; no unknown state was deleted.',file=sys.stderr);raise SystemExit(1)
+        tools.diag.report(error);raise SystemExit(1)

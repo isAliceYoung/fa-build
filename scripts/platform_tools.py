@@ -8,6 +8,10 @@ import subprocess
 import tarfile
 import tempfile
 import urllib.request
+import importlib.util
+
+_spec=importlib.util.spec_from_file_location('public_diagnostics',Path(__file__).with_name('diagnostics.py'))
+diag=importlib.util.module_from_spec(_spec);_spec.loader.exec_module(diag)
 
 NODE_NAME='node-v22.23.2-linux-x64'
 NODE_SHA256='d60acfe00a2932254bb0ad20e01b0d74397a0875595de719654b214f4b03f307'
@@ -23,9 +27,7 @@ def environment():
                 GIT_TERMINAL_PROMPT='0',GIT_CONFIG_NOSYSTEM='1',GIT_CONFIG_GLOBAL='/dev/null',GIT_CONFIG_SYSTEM='/dev/null')
 
 def run(args,timeout=1200):
-    result=subprocess.run(list(map(str,args)),env=environment(),stdin=subprocess.DEVNULL,capture_output=True,timeout=timeout)
-    require(result.returncode==0,'TOOL_FAILED: '+str(args[0]))
-    return result.stdout.decode('utf-8','replace').strip()
+    return diag.run(args,timeout,env=environment(),stdin=subprocess.DEVNULL)
 
 def capacity(memory,cpu,swap,free,mode):
     require(memory>=900*1024**2 and cpu>=1,'INSUFFICIENT_RAM_CPU')

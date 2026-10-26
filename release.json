@@ -1,9 +1,9 @@
 {
   "branch": "feature/CC",
-  "commit": "771c3bc72b05ac99249d69134836737c92534467",
+  "commit": "67f1826e1bcaf6e6d4ab0ce83cbaa36884ca7476",
   "entrypoint": "webdesktop-deploy/scripts/interactive_deploy.py",
-  "entrypoint_sha256": "3ec20ef759a0ad619a359a4a04dd888b732513c86928d868b2c615f1e33f76ba",
+  "entrypoint_sha256": "4f9991e621d5787cd4d28ff514e923f3f4e081d2ee7e7a12e2aa8ed7652f9055",
   "repository": "git@github.com:isAliceYoung/fa.git",
   "schema": 1,
-  "source_helper_sha256": "ce6cb71138df86051b192077526f5bea91ce3e974c9e623934d76eca7d276763"
+  "source_helper_sha256": "af2ac752783f3fbe045d49e69598d05d702f9c6a9680256d1263af060f323d9f"
 }

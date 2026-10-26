@@ -176,18 +176,23 @@ class PrivateSource:
         except OSError:
             fail("TOOL", "Required tool unavailable; use bootstrap.sh --install-tools prepare on Debian 12.")
         if result.returncode:
+            def denied(code,message):
+                error=Failure(code,message)
+                error.exit_code=result.returncode
+                error.tool=Path(str(argv[0])).name
+                raise error
             detail = (result.stderr or "").lower()
             if 'cat-file' in argv or 'merge-base' in argv:
-                fail('COMMIT', 'Approved commit is absent or is not an ancestor of the selected branch; nothing was published.')
+                denied('COMMIT', 'Approved commit is absent or is not an ancestor of the selected branch; nothing was published.')
             if "ls-remote" in argv and result.returncode == 2:
-                fail("BRANCH", "Requested branch was not found; check --branch before retrying. No source was published.")
+                denied("BRANCH", "Requested branch was not found; check --branch before retrying. No source was published.")
             if "host key verification failed" in detail or "host identification has changed" in detail:
-                fail("HOST_KEY", "GitHub SSH host verification failed. Stop and independently verify official host keys; do not disable checking.")
+                denied("HOST_KEY", "GitHub SSH host verification failed. Stop and independently verify official host keys; do not disable checking.")
             if "permission denied (publickey)" in detail or "repository not found" in detail or "could not read from remote repository" in detail:
-                fail("AUTHORIZATION", "Repository access denied. Add this VPS public key to the intended repository Deploy Keys, leave Allow write access unchecked, then rerun check. No application installation started.")
+                denied("AUTHORIZATION", "Repository access denied. Add this VPS public key to the intended repository Deploy Keys, leave Allow write access unchecked, then rerun check. No application installation started.")
             if "could not resolve hostname" in detail or "connection refused" in detail or "network is unreachable" in detail:
-                fail("NETWORK", "GitHub SSH is unavailable; check DNS and outbound TCP 22, then retry. No credentials were replaced.")
-            fail("COMMAND", "Source operation failed (exit {}). Tool output is hidden to avoid credential leaks.".format(result.returncode))
+                denied("NETWORK", "GitHub SSH is unavailable; check DNS and outbound TCP 22, then retry. No credentials were replaced.")
+            denied("COMMAND", "Source operation failed (exit {}). Tool output is hidden to avoid credential leaks.".format(result.returncode))
         return result.stdout.strip()
 
     def clone_budget(self):

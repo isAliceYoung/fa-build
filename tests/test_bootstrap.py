@@ -20,15 +20,19 @@ class Interaction(unittest.TestCase):
         def eof(_):raise EOFError()
         self.assertFalse(ui.consent(eof))
 
-    def fixture(self,answer,error=None):
+    def fixture(self,answer,error=None,existing=False,broken=False):
         temp=tempfile.TemporaryDirectory(prefix='public-bootstrap-test-');self.addCleanup(temp.cleanup)
         root=Path(temp.name)/'source'
+        if existing:(Path(temp.name)/'deploy_key').write_text('nonsecret fixture marker')
         class Source:
-            source=root;commit='a'*40
-            def prepare(self):return 'ssh-ed25519 TEST_PUBLIC_FIXTURE_ONLY fixture'
+            source=root;commit='a'*40;key=Path(temp.name)/'deploy_key'
+            def prepare(self):
+                if existing:raise AssertionError('Existing key must not be regenerated or repaired')
+                return 'ssh-ed25519 TEST_PUBLIC_FIXTURE_ONLY fixture'
             @contextlib.contextmanager
             def locked(self):yield
-            def verify_local(self):pass
+            def verify_local(self):
+                if broken:raise ui.private.Failure('KEY_PAIR','unsafe fixture keypair')
             def authorized(self):
                 if error:raise ui.private.Failure(error,'simulated denial')
                 return 'b'*40
@@ -41,8 +45,12 @@ class Interaction(unittest.TestCase):
         m=dict(commit='a'*40,entrypoint='webdesktop-deploy/scripts/interactive_deploy.py',entrypoint_sha256=hashlib.sha256(b'# approved fixture').hexdigest(),source_helper_sha256=hashlib.sha256(b'# helper fixture').hexdigest())
         a=types.SimpleNamespace(mode='local-test')
         coordinator=mock.Mock()
-        with mock.patch.object(ui.tools,'initial'),mock.patch.object(ui.private,'PrivateSource',return_value=Source()),mock.patch.object(ui,'load',return_value=coordinator):
-            with contextlib.redirect_stdout(io.StringIO()):result=ui.flow(a,m,lambda _:answer)
+        with mock.patch.object(ui.tools.diag,'append'),mock.patch.object(ui.tools,'initial'),mock.patch.object(ui.private,'PrivateSource',return_value=Source()),mock.patch.object(ui,'load',return_value=coordinator):
+            def read(_):
+                if existing:raise AssertionError('Valid existing identity must not prompt again')
+                return answer
+            with contextlib.redirect_stdout(io.StringIO()) as output:result=ui.flow(a,m,read)
+            if existing:self.assertNotIn('Public key:',output.getvalue())
         return result,coordinator
 
     def test_n_never_enters_private_deployment(self):
@@ -54,6 +62,14 @@ class Interaction(unittest.TestCase):
 
     def test_authorized_y_delegates_once_after_fixed_source_hashes(self):
         value,coordinator=self.fixture('y');self.assertTrue(value);coordinator.deploy.assert_called_once()
+
+    def test_existing_valid_key_live_authorized_without_prompt(self):
+        value,coordinator=self.fixture('',existing=True);self.assertTrue(value);coordinator.deploy.assert_called_once()
+
+    def test_existing_invalid_or_revoked_identity_never_prompts_or_rekeys(self):
+        for error in ('AUTHORIZATION','HOST_KEY','NETWORK','BRANCH','COMMIT'):
+            with self.subTest(error=error),self.assertRaises(ui.private.Failure):self.fixture('',error=error,existing=True)
+        with self.assertRaisesRegex(ui.private.Failure,'unsafe fixture'):self.fixture('',existing=True,broken=True)
 
     def test_local_test_cannot_be_silently_enabled(self):
         with mock.patch.object(ui.private,'require_platform'),mock.patch.object(ui,'metadata',return_value={}):

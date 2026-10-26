@@ -6,9 +6,11 @@ The published startup command must name a reviewed **full fa-build commit** and 
 
 ## Interactive flow
 
-Run only as root on a separately authorized Debian 12 amd64 host with systemd/cgroup v2. Basic Git/Python/OpenSSH/CA tools are prepared when absent. The script prints its actual checkout path, a per-host public Deploy Key, and https://github.com/isAliceYoung/fa/settings/keys. Add the public key in Deploy keys with **Allow write access disabled**. At `是否已完成 GitHub 授权？[y/N]:`, only y/Y proceeds. Empty input, n/N, EOF and invalid input exit safely.
+Run only as root on a separately authorized Debian 12 amd64 host with systemd/cgroup v2. Basic Git/Python/OpenSSH/CA tools are prepared when absent. On first key creation the script prints its actual checkout path, a per-host public Deploy Key, and https://github.com/isAliceYoung/fa/settings/keys. Add the public key in Deploy keys with **Allow write access disabled**. At `是否已完成 GitHub 授权？[y/N]:`, only y/Y proceeds. Empty input, n/N, EOF and invalid input exit safely.
 
 Confirmation is not authentication: pinned GitHub SSH host verification, real repository read access, approved feature/CC ancestry and exact commit checks follow. Existing matching keys and clean exact checkouts are reused. Unknown or modified state is preserved and refused. The private deployment entrypoint and source helper also have pinned file hashes in release.json.
+
+An existing identity must pass strict local ownership, permissions, keypair and pinned-host/configuration checks, followed by live read authorization. A valid authorized key is reused without printing the key or asking y again. An invalid, incomplete or revoked identity stops without replacement or repair. Review the existing key and GitHub authorization manually; do not delete key files to bypass the refusal.
 
 The generic scripts/private_repo.py authorization helper is intentionally shared with the private project and reviewed for public distribution. It contains no application code, credentials or Git history. The public repository is created independently, never by publishing the application's Git directory.
 
@@ -42,6 +44,10 @@ bash /root/fa-build.REVIEWED/bootstrap.sh resume --mode local-test --ack-local-t
 ```
 
 Every re-entry rechecks Git authorization and the approved source. Authentication/dependency failures can be retried without replacing valid keys or versions. Partial builds/signatures or an installing journal stop for root review. This is not automatic recovery of every installation phase. Preserve `/var/lib/webdesktop-bootstrap`, `/var/lib/webdesktop-fresh`, source/artifacts and native diagnostics. Do not delete state, reset databases or clear profiles to bypass a refusal.
+
+Failures report a reviewed stage/code/category, a known tool name, exit code when available and `/var/log/webdesktop-deploy/events.jsonl`. That directory is root 0700 and the metadata-only log is root 0600 with no ACLs or links. No raw subprocess output, arguments, environment or exception message is written to it. Before Python is available, failed basic-tool preparation uses `/var/log/webdesktop-bootstrap-tools/events.jsonl`, also root-only. Raw APT output is suppressed. If safe diagnostics cannot be established the process stops. Read-only status does not start installation or reset journals.
+
+Vendor accounts are not automatically made administrators. The signed private installer shares one fresh/native account policy. Unknown noninteractive host identities require locked shadow credentials, a private unprivileged group, no active process, no sudo entitlement and no SSH authorization. Conditional/custom SSH policy or uncertain evidence requires human review. No account, shell, password or SSH key is changed by that check. An early interrupted installation without a native journal is not replayed automatically, including when its signed source still exists.
 
 After successful installation, use the original read-only status interface and read credentials locally as root:
 

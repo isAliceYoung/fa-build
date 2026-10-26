@@ -8,11 +8,12 @@ import subprocess
 ROOT=Path(__file__).resolve().parents[1]
 ALLOWED={'bootstrap.sh','release.json','.gitignore','.gitattributes','README.md','SECURITY.md',
          'scripts/interactive.py','scripts/platform_tools.py','scripts/private_repo.py','scripts/status.py',
-         'tests/test_bootstrap.py','tests/audit_public.py'}
+         'scripts/diagnostics.py','tests/test_bootstrap.py','tests/audit_public.py'}
+HISTORICAL=ALLOWED-{'scripts/diagnostics.py'}
 PATTERNS=[rb'-----BEGIN (?:(?:OPENSSH|RSA|EC|DSA) )?PRIVATE KEY-----',rb'gh[pousr]_[A-Za-z0-9]{30,}',
           rb'github_pat_[A-Za-z0-9_]{30,}',rb'(?m)^(?:DATABASE_URL|AUTH_KEY|DESKTOP_PASSWORD|ADMIN_PASSWORD)=.+']
 def check(files):
-    if set(files)!=ALLOWED:raise ValueError('Unexpected or missing public file paths')
+    if set(files) not in (ALLOWED,HISTORICAL):raise ValueError('Unexpected or missing public file paths')
     total=0
     for name,data in files.items():
         total+=len(data)
