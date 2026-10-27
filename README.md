@@ -1,5 +1,9 @@
 # WebDesktop Public Bootstrap
 
+The isolated installation entrypoint now also installs the official Claude Desktop Linux package and GNOME Keyring after WebDesktop passes its health check. Anthropic's APT signing key must match `31DDDE24DDFAB679F42D7BD2BAA929FF1A7ECACE`; unknown existing APT configuration is not overwritten. This does not change Beta installation or any published version-to-commit mapping.
+
+**Package installation is not Claude GUI acceptance.** The current offline GUI worker cannot sign in to Claude; this installer does not weaken its sandbox, grant KVM access, or automatically register an unusable launcher. Debian package installation and login/keyring/resource tests remain NOT RUN locally. Component errors preserve the working desktop and `/var/lib/webdesktop-claude-bootstrap/status.json`; after root reviews the cause, retry only this component with `python3 -I /root/fa-build/scripts/claude_desktop.py`. Do not rerun the full fresh installer over an installed desktop.
+
 This public repository contains only a small, auditable Debian 12 amd64 bootstrap. WebDesktop application code, runtime packages, databases and user data remain outside this repository, in the separately authorized private project.
 
 Two startup choices are available: the convenience command trusts this official repository's current HTTPS `main`; the reproducible command checks out an independently reviewed **full fa-build commit before executing any repository script**. This repository cannot independently authenticate its own source after it has started running. Both choices keep private application versions pinned to reviewed commits and file digests.

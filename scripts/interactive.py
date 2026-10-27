@@ -167,6 +167,15 @@ def flow(a,catalogue,read=input):
     else:
         coordinator=load('approved_private_deployment',repo/m['entrypoint'])
         coordinator.deploy(a,tools)
+        # Public dependency preparation runs only AFTER verified isolated install
+        # success. Historical Beta installation and its source remain untouched.
+        component=load('public_claude_package',HERE/'claude_desktop.py')
+        try:component.install(tools,private)
+        except Exception as error:
+            tools.diag.report(error)
+            print('WebDesktop 已安装成功；Claude Desktop 软件包安装未完成。不要重新安装桌面；修复原因后执行：python3 -I /root/fa-build/scripts/claude_desktop.py')
+            display_credentials(source)
+            raise
         display_credentials(source)
     return True
 

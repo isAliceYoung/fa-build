@@ -15,7 +15,7 @@ import time
 ROOT=Path('/var/log/webdesktop-deploy')
 STAGES={'bootstrap','authorization','dependencies','building','packaging','delivery','fresh-preflight','tools','extracting','extracted',
         'source-ready','installing','native-preflight','native-extraction','ipv4-and-swap','packages','source-and-artifact','resource-policy',
-        'identities-and-layers','database-and-configuration','units-and-budget','start-service','ready','recovery'}
+        'identities-and-layers','database-and-configuration','units-and-budget','start-service','ready','recovery','claude-package'}
 GROUPS={
     'accounts':{'HOST_ACCOUNT_AUDIT_FAILED','HOST_ACCOUNT_SSH_REVIEW_REQUIRED','HOST_ACCOUNT_SUDO_REVIEW_REQUIRED','HOST_ACCOUNT_ACTIVE_REVIEW_REQUIRED',
                 'HOST_ACCOUNT_HOME_REVIEW_REQUIRED','HOST_ACCOUNT_IDENTITY_REVIEW_REQUIRED','HOST_ACCOUNT_LOGIN_REVIEW_REQUIRED',
@@ -45,9 +45,12 @@ GROUPS={
     'services':{'HOST_SERVICE_REVIEW_REQUIRED'},
     'python':{'PYTHON_VALUE_ERROR','PYTHON_RUNTIME_ERROR','PYTHON_EXCEPTION','INTERRUPTED'},
 }
+GROUPS['package'].update({'CLAUDE_SIGNING_FINGERPRINT_MISMATCH','CLAUDE_SIGNING_KEY_SIZE','CLAUDE_PACKAGE_NOT_INSTALLED'})
+GROUPS['resources'].add('CLAUDE_DISK_RESERVE_REQUIRED')
+GROUPS['state'].add('CLAUDE_EXISTING_APT_CONFIGURATION_REVIEW_REQUIRED')
 CODES=set().union(*GROUPS.values())
 CATEGORIES=set(GROUPS)|{'services','database','network'}
-TOOLS={'bash','git','apt-get','systemctl','psql','pg_ctlcluster','sshd','ip','ss','nft','iptables-legacy-save','ip6tables-legacy-save','dpkg','python3','runuser','useradd','ssh-keygen','npm','node'}
+TOOLS={'bash','git','apt-get','systemctl','psql','pg_ctlcluster','sshd','ip','ss','nft','iptables-legacy-save','ip6tables-legacy-save','dpkg','dpkg-query','curl','gpg','python3','runuser','useradd','ssh-keygen','npm','node'}
 STAGE='bootstrap'
 PREFIX='WD_DEPLOY_ERROR '
 
@@ -56,7 +59,7 @@ PREFIX='WD_DEPLOY_ERROR '
 PRIVATE_MODULES={'install_requirements.py','interactive_deploy.py','deployment_package.py','fresh_install.py','staging_install.py',
                  'isolated_deploy.py','private_repo.py','private_release.py','release_trust.py','staging_bundle.py','system_layers.py',
                  'resource_policy.py','preparation_swap.py','deploy_diagnostics.py'}
-PUBLIC_MODULES={'interactive.py','platform_tools.py','private_repo.py','status.py','diagnostics.py','beta_install.py'}
+PUBLIC_MODULES={'interactive.py','platform_tools.py','private_repo.py','status.py','diagnostics.py','beta_install.py','claude_desktop.py'}
 MODULES=PRIVATE_MODULES|{'public/'+name for name in PUBLIC_MODULES}
 
 # Every emitted reason is static and reviewed. stderr and exception messages
@@ -74,6 +77,11 @@ REASONS={code:{
     'python':'An unreviewed exception occurred; its message is hidden. Inspect the reported source line.',
 }[category] for category,codes in GROUPS.items() for code in codes}
 REASONS.update({
+    'CLAUDE_SIGNING_FINGERPRINT_MISMATCH':'The official Claude APT key does not match the independently pinned fingerprint; no package is installed.',
+    'CLAUDE_SIGNING_KEY_SIZE':'The downloaded Claude signing key is empty or exceeds its fixed size limit.',
+    'CLAUDE_PACKAGE_NOT_INSTALLED':'APT returned but dpkg does not confirm Claude Desktop as installed.',
+    'CLAUDE_DISK_RESERVE_REQUIRED':'Claude package preparation requires at least 3 GiB free on the relevant filesystems; the working desktop is preserved.',
+    'CLAUDE_EXISTING_APT_CONFIGURATION_REVIEW_REQUIRED':'Existing Claude APT source or key differs; it was not overwritten and needs administrator review.',
     'BETA_REQUIRES_EXPLICIT_LEGACY_MODE':'Legacy Beta cannot use the isolated formal signature workflow; explicitly select the local-test legacy entrypoint.',
     'UNKNOWN_INSTALL_VERSION':'The requested exact version is absent from this reviewed public release catalogue.',
     'VERSION_TAG_LIST_TOO_LARGE':'The private version tag listing exceeds the approved size budget.',
