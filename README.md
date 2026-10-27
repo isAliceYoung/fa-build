@@ -18,6 +18,7 @@ After GitHub read authorization, enter the exact version at `请输入你要安�
 
 | Input | Fixed commit | Installer |
 | --- | --- | --- |
+| `1.2.0` | `cb280d280d35212b23bd823e8f64727f6811d9c6` (`v1.2.0`) | CC isolated installation with pinned source updates, progress and verified user-data protection |
 | `1.1.0` | `07f9adf18e133534e02ce9d9500af45dc8afb90b` (`v1.1.0`) | CC isolated installation with settings updates and simplified login UI |
 | `1.0.0` | `73e544e32b67bee2ac17cca7f21b7cf5692d0482` (`v1.0.0`) | Existing CC isolated build/sign/verify/fresh installation |
 | `beta0.1.0` | `5922e1408de91e56771f1ea0bf94a9df1b7028cd` (`v0.1.0-beta.1`) | Unchanged Beta installer with offline source handoff |
@@ -84,6 +85,8 @@ bash /opt/webdesktop/source/webdesktop-deploy/install-fresh.sh status
 Credentials are in `/etc/webdesktop-isolated/login.json`; ordinary output only gives this path. Native diagnostics are under `/etc/webdesktop-isolated/install.log`. After a fresh install, open `http://<VPS-IPv4>:3000` using the server IPv4. No SSH tunnel is required; existing provider security groups and host firewall rules must permit TCP 3000. Desktop/admin authentication and same-origin checks remain. HTTPS/domain setup is separate. Public HTTP is unencrypted and browser system-clipboard features may require HTTPS. Existing installations are not automatically rebound or repaired.
 
 From 1.1.0, signed application updates in desktop Settings require an active desktop session and explicit confirmation, without retyping an administrator or desktop password. Root still independently verifies the session and one-use confirmation, the signed prepared release and system-layer compatibility. History cleanup retains administrator reauthentication. The public bootstrap does not implement git pull updates. Automatic in-place system-layer upgrades remain unavailable. GitHub source assets are not signed online-update runtime packages.
+
+From 1.2.0, new signed isolated installations enable the web update service by default. LOCAL_TEST_TRUST installations can discover newer stable versions from this fixed catalogue, verify the private SSH tag/commit, build under the existing wdbuild sandbox, then sign and verify locally before the original transactional updater switches versions. Existing registered keys are reused, not replaced. Guest HOME (downloads, Chromium Profile and GUI configuration), runtime credentials and PostgreSQL have protected backups and retention checks. Prepared-source stages and elapsed time are persisted; switching briefly stops the backend, and progress resumes after reconnection. Formal mode still requires independent signed runtime preparation. Existing 1.1.0 does not contain this source updater: first adoption needs a separately verified root maintenance checkout, not a fresh install over existing data. Real Debian upgrades and GUI/data retention remain NOT RUN.
 
 For Beta, the original check command is `bash /usr/local/lib/webdesktop-deploy/check.sh`. Initial credential seeds are in `/home/webdesktop/webdesktop/.env`; read locally as root/the application user, never publish. Beta keeps its original `http://127.0.0.1:3000` binding and network behavior. `bash /root/fa-build/install.sh status` reads preparation journals, including Beta. Interrupted installation requires manual review; no reset or automatic replay is provided.
 

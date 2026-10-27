@@ -28,8 +28,10 @@ beta=module('version_beta',ROOT/'scripts/beta_install.py')
 class Versions(unittest.TestCase):
     def test_catalogue_has_reviewed_fixed_versions(self):
         m=ui.metadata()
-        self.assertEqual(set(m['versions']),{'1.1.0','1.0.0','beta0.1.0'})
-        self.assertEqual(m['default_version'],'1.1.0')
+        self.assertEqual(set(m['versions']),{'1.2.0','1.1.0','1.0.0','beta0.1.0'})
+        self.assertEqual(m['default_version'],'1.2.0')
+        self.assertEqual(m['versions']['1.2.0']['commit'],'cb280d280d35212b23bd823e8f64727f6811d9c6')
+        self.assertEqual(m['versions']['1.2.0']['tag'],'v1.2.0')
         self.assertEqual(m['versions']['1.1.0']['commit'],'07f9adf18e133534e02ce9d9500af45dc8afb90b')
         self.assertEqual(m['versions']['1.1.0']['tag'],'v1.1.0')
         self.assertEqual(m['versions']['1.0.0']['commit'],'73e544e32b67bee2ac17cca7f21b7cf5692d0482')
@@ -42,7 +44,7 @@ class Versions(unittest.TestCase):
             selected=ui.select_version(ui.metadata(),read=lambda _:next(answers))
         self.assertEqual((selected['engine'],selected['branch']),('legacy-beta','main'))
         with contextlib.redirect_stdout(io.StringIO()):
-            for version in ('1.1.0','1.0.0','beta0.1.0'):
+            for version in ('1.2.0','1.1.0','1.0.0','beta0.1.0'):
                 self.assertEqual(ui.select_version(ui.metadata(),version)['version'],version)
             with self.assertRaisesRegex(ValueError,'UNKNOWN_INSTALL_VERSION'):
                 ui.select_version(ui.metadata(),'latest')
@@ -115,6 +117,14 @@ class Versions(unittest.TestCase):
         self.assertEqual(selected[0][0],'approved_private_deployment')
         coordinator.deploy.assert_called_once_with(args,ui.tools)
 
+    def test_1_2_0_routes_to_reviewed_source_update_release(self):
+        result,events,selected,coordinator,args,_=self.route('1.2.0')
+        self.assertTrue(result)
+        self.assertEqual(args.version,'1.2.0')
+        self.assertIn(('acquire','feature/CC','cb280d280d35212b23bd823e8f64727f6811d9c6'),events)
+        self.assertEqual(selected[0][0],'approved_private_deployment')
+        coordinator.deploy.assert_called_once_with(args,ui.tools)
+
     def test_beta_routes_to_adapter_and_main_fixed_commit(self):
         result,events,selected,coordinator,args,_=self.route('beta0.1.0')
         self.assertTrue(result)
@@ -127,7 +137,7 @@ class Versions(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'EXPLICIT_LEGACY_MODE'):self.route('beta0.1.0',mode='formal')
 
     def test_wrong_entrypoint_hash_stops_both_engines(self):
-        for version in ('1.1.0','1.0.0','beta0.1.0'):
+        for version in ('1.2.0','1.1.0','1.0.0','beta0.1.0'):
             with self.subTest(version=version),self.assertRaisesRegex(ValueError,'DIGEST_MISMATCH'):self.route(version,wrong_hash=True)
 
     def test_cancel_selection_never_loads_or_acquires_source(self):
