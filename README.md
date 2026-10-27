@@ -27,7 +27,7 @@ Local builds target 2 vCPU, 2 GiB RAM, 2 GiB effective Swap and approximately 15
 
 No npm build runs as root or a service/guest account. Git credentials stay in a root-only state directory and are not passed to wdbuild. Builds have memory/process/log/tree/disk limits. Each later stage rechecks disk; same-filesystem moves reduce peak duplication. Only journal-owned, verified, obsolete scratch is cleaned. Source, keys, signing audit, database, files, Profile, credentials and installed releases are retained.
 
-Prepared private sources live under `/opt/webdesktop-private-build/sources/<approved-sha>`; formal sources under `/opt/webdesktop/source` are created only by the verified installation engine. Old SHA copies are preserved, never reset into the new version. Existing deployments, databases or interrupted installs block fresh installation. No domain, Cloudflare, SSH public keys, proxy or public management port is changed automatically. The browser's isolated namespace/nft/forwarding setup needs the explicit egress flag.
+Prepared private sources live under `/opt/webdesktop-private-build/sources/<approved-sha>`; formal sources under `/opt/webdesktop/source` are created only by the verified installation engine. Old SHA copies are preserved, never reset into the new version. Existing deployments, databases or interrupted installs block fresh installation. Domains, Cloudflare, SSH public keys, proxies and the administrator inbound firewall are preserved. The authorized fresh installer listens on IPv4 0.0.0.0:3000 for direct desktop access. Existing IPv6 kernel controls are disabled and persisted using the reviewed IPv4-only setup; absent IPv6 support is skipped. Installation refuses an active IPv6 SSH session rather than cutting it off. The browser namespace/nft/forwarding setup still needs the explicit egress flag.
 
 ## Status and re-entry
 
@@ -57,7 +57,7 @@ After successful installation, use the original read-only status interface and r
 bash /opt/webdesktop/source/webdesktop-deploy/install-fresh.sh status
 ```
 
-Credentials are in `/etc/webdesktop-isolated/login.json`; ordinary output only gives this path. Native diagnostics are under `/etc/webdesktop-isolated/install.log`. The service listens at `http://127.0.0.1:3000`; a public HTTPS access path requires separately authorized administration.
+Credentials are in `/etc/webdesktop-isolated/login.json`; ordinary output only gives this path. Native diagnostics are under `/etc/webdesktop-isolated/install.log`. After a fresh install, open `http://<VPS-IPv4>:3000` using the server IPv4. No SSH tunnel is required; existing provider security groups and host firewall rules must permit TCP 3000. Desktop/admin authentication and same-origin checks remain. HTTPS/domain setup is separate. Public HTTP is unencrypted and browser system-clipboard features may require HTTPS. Existing installations are not automatically rebound or repaired.
 
 Application updates retain the private project's existing root executor and administrator reauthentication. The public bootstrap does not implement git pull updates or bypass system-layer compatibility. Automatic in-place system-layer upgrades remain unavailable.
 
