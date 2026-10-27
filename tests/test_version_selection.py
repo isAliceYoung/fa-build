@@ -62,6 +62,50 @@ class Versions(unittest.TestCase):
             with self.subTest(field=field),mock.patch.object(Path,'read_text',return_value=json.dumps(data)):
                 with self.assertRaises(ValueError):ui.metadata()
 
+    def live_catalogue(self,raw):
+        source=mock.Mock()
+        source.locked.return_value=contextlib.nullcontext()
+        source.git.return_value=raw
+        with contextlib.redirect_stdout(io.StringIO()):result=ui.available_versions(ui.metadata(),source)
+        source.verify_local.assert_called_once()
+        source.git.assert_called_once_with('ls-remote','--tags',ui.REPO)
+        source.clone.assert_not_called()
+        return result
+
+    def tag_rows(self):
+        return '\n'.join(item['commit']+'\trefs/tags/'+item['tag'] for item in ui.metadata()['versions'].values())
+
+    def test_live_scan_keeps_only_registered_tags_and_never_adopts_an_unknown_version(self):
+        result=self.live_catalogue(self.tag_rows()+'\n'+'a'*40+'\trefs/tags/v99.0.0')
+        self.assertEqual(result,ui.metadata())
+        self.assertNotIn('99.0.0',result['versions'])
+
+    def test_live_scan_checks_annotated_tag_peeled_commit(self):
+        current=ui.metadata()['versions']['1.2.0']['commit']
+        rows=self.tag_rows().replace(current+'\trefs/tags/v1.2.0','a'*40+'\trefs/tags/v1.2.0')
+        result=self.live_catalogue(rows+'\n'+current+'\trefs/tags/v1.2.0^{}')
+        self.assertEqual(result['versions']['1.2.0']['commit'],current)
+
+    def test_unpublished_tag_is_not_offered_for_installation(self):
+        rows='\n'.join(row for row in self.tag_rows().splitlines() if not row.endswith('/v1.2.0'))
+        result=self.live_catalogue(rows)
+        self.assertNotIn('1.2.0',result['versions']);self.assertEqual(result['default_version'],'1.1.0')
+
+    def test_moved_registered_tag_refuses_instead_of_using_latest_head(self):
+        current=ui.metadata()['versions']['1.2.0']['commit']
+        with self.assertRaisesRegex(ValueError,'PUBLISHED_VERSION_TAG_MISMATCH'):
+            self.live_catalogue(self.tag_rows().replace(current,'a'*40))
+
+    def test_invalid_duplicate_oversized_or_orphan_peeled_listing_is_rejected(self):
+        current=ui.metadata()['versions']['1.2.0']['commit']
+        for raw in ('bad listing',self.tag_rows()+'\n'+self.tag_rows().splitlines()[0],
+                    'x'*(2*1024**2+1),current+'\trefs/tags/v1.2.0^{}'):
+            with self.subTest(length=len(raw)),self.assertRaises(ValueError):self.live_catalogue(raw)
+
+    def test_empty_or_only_unknown_remote_tags_cannot_start_installation(self):
+        for raw in ('','a'*40+'\trefs/tags/v99.0.0'):
+            with self.assertRaisesRegex(ValueError,'NO_APPROVED_PUBLISHED_VERSIONS'):self.live_catalogue(raw)
+
     def route(self,version='1.0.0',wrong_hash=False,mode='local-test',answer=True):
         temp=tempfile.TemporaryDirectory(prefix='version-route-');self.addCleanup(temp.cleanup)
         root=Path(temp.name);key=root/'deploy_key';key.write_text('fixture marker')
@@ -74,6 +118,9 @@ class Versions(unittest.TestCase):
             def locked(self):yield
             def verify_local(self):events.append('identity')
             def authorized(self):events.append('authorized')
+            def git(self,*args):
+                events.append('live-tags')
+                return '\n'.join(item['commit']+'\trefs/tags/'+item['tag'] for item in catalogue['versions'].values())
             def check_node(self,path):pass
         def acquire(source):
             events.append(('acquire',source.branch,source.commit))
@@ -108,6 +155,8 @@ class Versions(unittest.TestCase):
         self.assertEqual(args.version,'1.0.0')
         coordinator.deploy.assert_called_once_with(args,ui.tools)
         self.assertLess(events.index('authorized'),events.index('version-prompt'))
+        self.assertLess(events.index('authorized'),events.index('live-tags'))
+        self.assertLess(events.index('live-tags'),events.index('version-prompt'))
 
     def test_1_1_0_routes_to_reviewed_new_commit(self):
         result,events,selected,coordinator,args,_=self.route('1.1.0')

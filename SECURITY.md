@@ -1,6 +1,6 @@
 # Bootstrap trust and disclosure
 
-Use a full public commit obtained independently. Validate the fetched SHA before root execution. release.json pins the approved private branch/commit and entrypoint digests; it is not a self-established release signing root.
+For an independently pinned bootstrap, use a full public commit obtained independently and validate the fetched SHA before root execution. The optional convenience command instead trusts the official repository's current HTTPS main; it does not offer that independent version pin. release.json pins the approved private branch/commit and entrypoint digests in both cases; it is not a self-established release signing root.
 
 GitHub SSH uses the pinned Ed25519 key from [GitHub's official fingerprints](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/githubs-ssh-key-fingerprints), strict host checking and a dedicated identity. No agent forwarding, password prompt, PAT, write-permission test, automatic unknown-key acceptance or alternate unverified SSH host is used. Reading a repository does not prove a Deploy Key was configured read-only; the administrator must verify GitHub's setting.
 
@@ -14,4 +14,4 @@ The shared diagnostics module is intentionally public generic orchestration code
 
 Version labels select only reviewed fixed commits and entrypoint hashes. The Beta adapter does not copy the Deploy Key, SSH configuration or GitHub credentials into its offline runtime checkout. Beta retains its original weaker runtime model; it cannot claim the CC formal signature or isolation contract. Choosing a release number does not change LOCAL_TEST_TRUST into independent trust. Unknown accounts/data and interrupted installations are never automatically adopted or cleared.
 
-The short install.sh command keeps preparation inside this public repository, but its full commit must still be pinned before execution. Never run arbitrary latest main as root to save characters. The administrator authorizes installation by executing the explicit convenience entrypoint; no remote VPS operation is implied by publishing it.
+The short install.sh command keeps preparation inside this public repository. A hash inside an already executing script cannot independently authenticate that script; use the pinned startup variant when that guarantee is required. The administrator authorizes installation by executing the explicit convenience entrypoint; no remote VPS operation is implied by publishing it. Live private tag discovery only filters reviewed catalogue entries and verifies their immutable commit mappings; unregistered tags cannot become installation targets.

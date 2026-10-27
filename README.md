@@ -2,11 +2,17 @@
 
 This public repository contains only a small, auditable Debian 12 amd64 bootstrap. WebDesktop application code, runtime packages, databases and user data remain outside this repository, in the separately authorized private project.
 
-The startup command must check out a reviewed **full fa-build commit before executing any repository script**. Obtain that commit independently. Do not execute arbitrary latest main or curl piped to a shell. The maintainer supplies the pinned one-line command; this repository cannot authenticate its own latest version.
+Two startup choices are available: the convenience command trusts this official repository's current HTTPS `main`; the reproducible command checks out an independently reviewed **full fa-build commit before executing any repository script**. This repository cannot independently authenticate its own source after it has started running. Both choices keep private application versions pinned to reviewed commits and file digests.
 
 ## Short startup and version selection
 
-`install.sh` now contains the clean environment and explicit local-test installation flags; `bootstrap.sh` contains platform checks, basic dependency preparation and safe diagnostics. The short command only needs Git/CA preparation, a public clone, an exact checkout, and `install.sh`. It remains root-only, Debian 12 amd64, for a new installation.
+`install.sh` contains the clean environment and explicit local-test installation flags; `bootstrap.sh` contains platform checks, basic dependency preparation and safe diagnostics. It remains root-only, Debian 12 amd64, for a new installation. The convenience command does not require manually editing a public commit:
+
+```bash
+apt-get update && apt-get install -y git ca-certificates && git clone -c core.hooksPath=/dev/null -c core.fsmonitor=false https://github.com/isAliceYoung/fa-build.git /root/fa-build && bash /root/fa-build/install.sh
+```
+
+This executes the current official public `main`, not an independently pinned bootstrap. `/root/fa-build` must not already exist; no old checkout, installed system or failed journal is overwritten. To choose an independently reviewed bootstrap instead, use the following pinned template.
 
 This is a **template**. Replace `APPROVED_PUBLIC_SHA` with the independently approved full public commit. `/root/fa-build` must not exist; the command never overwrites an existing directory.
 
@@ -14,7 +20,7 @@ This is a **template**. Replace `APPROVED_PUBLIC_SHA` with the independently app
 apt-get update && apt-get install -y git ca-certificates && git clone -n -c core.hooksPath=/dev/null -c core.fsmonitor=false https://github.com/isAliceYoung/fa-build.git /root/fa-build && git -C /root/fa-build checkout --detach APPROVED_PUBLIC_SHA && bash /root/fa-build/install.sh
 ```
 
-After GitHub read authorization, enter the exact version at `请输入你要安装的版本：`:
+After GitHub read authorization, the bootstrap scans private repository tags through the existing pinned SSH identity, checks each registered version against its full approved commit (including annotated tags), then prompts `请输入你要安装的版本：`:
 
 | Input | Fixed commit | Installer |
 | --- | --- | --- |
@@ -23,7 +29,7 @@ After GitHub read authorization, enter the exact version at `请输入你要安�
 | `1.0.0` | `73e544e32b67bee2ac17cca7f21b7cf5692d0482` (`v1.0.0`) | Existing CC isolated build/sign/verify/fresh installation |
 | `beta0.1.0` | `5922e1408de91e56771f1ea0bf94a9df1b7028cd` (`v0.1.0-beta.1`) | Unchanged Beta installer with offline source handoff |
 
-Invalid input asks again; empty input/EOF exits without installation. `--version 1.0.0` selects a reviewed version without that prompt. Future stable/Beta versions require an audited catalogue update and a new public commit; an existing version never silently follows a changing branch. No arbitrary URL, branch, SHA or shell input is accepted.
+Invalid input asks again; empty input/EOF exits without installation. `--version 1.0.0` selects a reviewed version without that prompt. Missing private tags are not offered; moved tags, malformed listings and authorization failures stop installation. Future stable/Beta versions require an audited catalogue update and a new public commit; an existing version never silently follows a changing branch. This is a live tag scan intersected with the reviewed catalogue, not an anonymous private GitHub Release API query. Unknown tags are not automatically approved. No arbitrary URL, branch, SHA or shell input is accepted.
 
 **A release number is not a trust mode.** The short `install.sh` entrypoint explicitly uses **LOCAL_TEST_TRUST**, not independent production signing. For the isolated engine, advanced administrators can still run `bootstrap.sh` in formal mode with separately prepared signed materials. Legacy Beta is refused in formal mode: its original installer does not implement the CC signature/isolation contract.
 
@@ -84,6 +90,8 @@ bash /opt/webdesktop/source/webdesktop-deploy/install-fresh.sh status
 
 Credentials are in `/etc/webdesktop-isolated/login.json`; ordinary output only gives this path. Native diagnostics are under `/etc/webdesktop-isolated/install.log`. After a fresh install, open `http://<VPS-IPv4>:3000` using the server IPv4. No SSH tunnel is required; existing provider security groups and host firewall rules must permit TCP 3000. Desktop/admin authentication and same-origin checks remain. HTTPS/domain setup is separate. Public HTTP is unencrypted and browser system-clipboard features may require HTTPS. Existing installations are not automatically rebound or repaired.
 
+After the isolated coordinator returns from successful installation and health checks, this public wrapper additionally prints `cat /etc/webdesktop-isolated/login.json`. It prints the command only, never runs it or exposes passwords in the installation log. The file contains initial credentials; later changed passwords remain in the database and are not replaced by the old seed during updates. Failed installation or health checks do not print the success instruction. No existing version tag or private application code is changed by this wrapper improvement.
+
 From 1.1.0, signed application updates in desktop Settings require an active desktop session and explicit confirmation, without retyping an administrator or desktop password. Root still independently verifies the session and one-use confirmation, the signed prepared release and system-layer compatibility. History cleanup retains administrator reauthentication. The public bootstrap does not implement git pull updates. Automatic in-place system-layer upgrades remain unavailable. GitHub source assets are not signed online-update runtime packages.
 
 From 1.2.0, new signed isolated installations enable the web update service by default. LOCAL_TEST_TRUST installations can discover newer stable versions from this fixed catalogue, verify the private SSH tag/commit, build under the existing wdbuild sandbox, then sign and verify locally before the original transactional updater switches versions. Existing registered keys are reused, not replaced. Guest HOME (downloads, Chromium Profile and GUI configuration), runtime credentials and PostgreSQL have protected backups and retention checks. Prepared-source stages and elapsed time are persisted; switching briefly stops the backend, and progress resumes after reconnection. Formal mode still requires independent signed runtime preparation. Existing 1.1.0 does not contain this source updater: first adoption needs a separately verified root maintenance checkout, not a fresh install over existing data. Real Debian upgrades and GUI/data retention remain NOT RUN.
@@ -91,6 +99,8 @@ From 1.2.0, new signed isolated installations enable the web update service by d
 For Beta, the original check command is `bash /usr/local/lib/webdesktop-deploy/check.sh`. Initial credential seeds are in `/home/webdesktop/webdesktop/.env`; read locally as root/the application user, never publish. Beta keeps its original `http://127.0.0.1:3000` binding and network behavior. `bash /root/fa-build/install.sh status` reads preparation journals, including Beta. Interrupted installation requires manual review; no reset or automatic replay is provided.
 
 ## Evidence limits
+
+The credential-instruction/live-tag follow-up passed 40 local bootstrap/version tests, Python syntax checks and shell syntax checks. Public working files and all historical trees were audited. Tests simulate SSH tag responses and installation/health outcomes; no actual VPS was contacted or modified. The existing private updater's data/authentication subset ran 43 local cases (42 passed, one Linux-only case skipped), which is not evidence of a real Debian upgrade preserving passwords.
 
 Fast tests use local simulations, local Git and throwaway keys only. They do not prove real private GitHub permissions, Debian builds, Linux DAC/systemd behavior, first installation, PostgreSQL, Chromium, GUI or VPS reliability. Those remain **NOT RUN** until a separately authorized test occurs. No Actions or VM workflow is shipped here.
 

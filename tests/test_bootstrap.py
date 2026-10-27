@@ -20,7 +20,7 @@ class Interaction(unittest.TestCase):
         def eof(_):raise EOFError()
         self.assertFalse(ui.consent(eof))
 
-    def fixture(self,answer,error=None,existing=False,broken=False):
+    def fixture(self,answer,error=None,existing=False,broken=False,install_error=False):
         temp=tempfile.TemporaryDirectory(prefix='public-bootstrap-test-');self.addCleanup(temp.cleanup)
         root=Path(temp.name)/'source'
         if existing:(Path(temp.name)/'deploy_key').write_text('nonsecret fixture marker')
@@ -36,22 +36,25 @@ class Interaction(unittest.TestCase):
             def authorized(self):
                 if error:raise ui.private.Failure(error,'simulated denial')
                 return 'b'*40
+            def git(self,*args):return 'a'*40+'\trefs/tags/v1.0.0'
             def clone(self):
                 root.mkdir()
                 for name,data in [('webdesktop-deploy/scripts/interactive_deploy.py',b'# approved fixture'),('webdesktop-deploy/scripts/private_repo.py',b'# helper fixture')]:
                     p=root/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(data)
                 return dict(dirty=False,commit='a'*40)
             def check_node(self,*args):pass
-        m=dict(default_version='1.0.0',versions={'1.0.0':dict(commit='a'*40,branch='feature/CC',engine='isolated',entrypoint='webdesktop-deploy/scripts/interactive_deploy.py',entrypoint_sha256=hashlib.sha256(b'# approved fixture').hexdigest())},source_helper_sha256=hashlib.sha256(b'# helper fixture').hexdigest())
+        m=dict(default_version='1.0.0',versions={'1.0.0':dict(commit='a'*40,tag='v1.0.0',branch='feature/CC',engine='isolated',entrypoint='webdesktop-deploy/scripts/interactive_deploy.py',entrypoint_sha256=hashlib.sha256(b'# approved fixture').hexdigest())},source_helper_sha256=hashlib.sha256(b'# helper fixture').hexdigest())
         a=types.SimpleNamespace(mode='local-test')
         coordinator=mock.Mock()
+        if install_error:coordinator.deploy.side_effect=ValueError('FINAL_HEALTH_NOT_READY')
         with mock.patch.object(ui.tools.diag,'append'),mock.patch.object(ui.tools,'initial'),mock.patch.object(ui.private,'PrivateSource',return_value=Source()),mock.patch.object(ui,'load',return_value=coordinator):
             def read(_):
                 if '版本' in _:return '1.0.0'
                 if existing:raise AssertionError('Valid existing identity must not prompt again')
                 return answer
-            with contextlib.redirect_stdout(io.StringIO()) as output:result=ui.flow(a,m,read)
-            if existing:self.assertNotIn('Public key:',output.getvalue())
+            self.output=io.StringIO()
+            with contextlib.redirect_stdout(self.output):result=ui.flow(a,m,read)
+            if existing:self.assertNotIn('Public key:',self.output.getvalue())
         return result,coordinator
 
     def test_n_never_enters_private_deployment(self):
@@ -63,6 +66,17 @@ class Interaction(unittest.TestCase):
 
     def test_authorized_y_delegates_once_after_fixed_source_hashes(self):
         value,coordinator=self.fixture('y');self.assertTrue(value);coordinator.deploy.assert_called_once()
+
+    def test_success_prints_password_command_without_reading_passwords(self):
+        self.fixture('y')
+        self.assertIn('cat /etc/webdesktop-isolated/login.json',self.output.getvalue())
+        with mock.patch('builtins.open',side_effect=AssertionError('Credentials must not be read')),contextlib.redirect_stdout(io.StringIO()) as output:
+            ui.credential_help()
+        self.assertIn('cat /etc/webdesktop-isolated/login.json',output.getvalue())
+
+    def test_failed_health_or_installation_never_prints_password_command(self):
+        with self.assertRaisesRegex(ValueError,'FINAL_HEALTH_NOT_READY'):self.fixture('y',install_error=True)
+        self.assertNotIn('cat /etc/webdesktop-isolated/login.json',self.output.getvalue())
 
     def test_existing_valid_key_live_authorized_without_prompt(self):
         value,coordinator=self.fixture('',existing=True);self.assertTrue(value);coordinator.deploy.assert_called_once()

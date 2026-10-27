@@ -58,6 +58,37 @@ def select_version(catalogue,requested=None,read=input):
             return dict(catalogue['versions'][value],version=value)
         print('没有这个版本，请输入上面列出的完整版本号；直接回车退出。')
 
+def available_versions(catalogue,source):
+    """Intersect reviewed metadata with live private tags; never install an unknown tag."""
+    with source.locked():
+        source.verify_local()
+        raw=source.git('ls-remote','--tags',REPO)
+    tools.require(len(raw.encode('utf-8'))<=2*1024**2,'VERSION_TAG_LIST_TOO_LARGE')
+    tags={}
+    for row in raw.splitlines():
+        fields=row.split()
+        tools.require(len(fields)==2 and re.fullmatch('[a-f0-9]{40}',fields[0])
+                      and fields[1].startswith('refs/tags/') and fields[1] not in tags,'VERSION_TAG_LIST_INVALID')
+        tags[fields[1]]=fields[0]
+    versions={}
+    for version,item in catalogue['versions'].items():
+        tag='refs/tags/'+item['tag']
+        tools.require(tag+'^{}' not in tags or tag in tags,'VERSION_TAG_LIST_INVALID')
+        actual=tags.get(tag+'^{}',tags.get(tag))
+        if actual is None:continue
+        tools.require(actual==item['commit'],'PUBLISHED_VERSION_TAG_MISMATCH')
+        versions[version]=item
+    tools.require(versions,'NO_APPROVED_PUBLISHED_VERSIONS')
+    default=catalogue['default_version'] if catalogue['default_version'] in versions else next(iter(versions))
+    print('已核验私有仓库版本标签；仅显示已登记且提交匹配的版本。')
+    return dict(catalogue,versions=versions,default_version=default)
+
+
+def credential_help():
+    # Print an instruction only. Never read or echo the protected credentials.
+    print('查看初始桌面和管理员密码（在本机 root 终端执行）：\ncat /etc/webdesktop-isolated/login.json')
+
+
 def acquire(source):
     # A live permission check is mandatory even if a prior exact checkout exists.
     with source.locked():source.verify_local();source.authorized()
@@ -91,6 +122,7 @@ def flow(a,catalogue,read=input):
         print('\nhttps://github.com/isAliceYoung/fa/settings/keys\n请添加到 Deploy keys，并保持 Allow write access 未勾选。')
         if not consent(read):print('未授权；没有构建或安装。');return False
         with source.locked():source.verify_local();source.authorized()
+    catalogue=available_versions(catalogue,source)
     m=select_version(catalogue,getattr(a,'version',None),read)
     if m is None:print('未选择版本；没有构建或安装。');return False
     tools.require(m['engine']!='legacy-beta' or a.mode=='local-test','BETA_REQUIRES_EXPLICIT_LEGACY_MODE')
@@ -112,6 +144,7 @@ def flow(a,catalogue,read=input):
     else:
         coordinator=load('approved_private_deployment',repo/m['entrypoint'])
         coordinator.deploy(a,tools)
+        credential_help()
     return True
 
 def main(argv=None):
@@ -130,7 +163,7 @@ def main(argv=None):
         print(tools.run(['/usr/bin/python3','-I',ROOT/'scripts/status.py']));return
     tools.require(a.authorize_install and a.authorize_isolated_egress,'EXPLICIT_INSTALL_AND_EGRESS_FLAGS_REQUIRED')
     print('Trust mode: '+('LOCAL_TEST_TRUST (NOT independent release trust)' if a.mode=='local-test' else 'FORMAL (independent signed package required)'))
-    print('Verified bootstrap checkout: '+str(ROOT))
+    print('Bootstrap checkout: '+str(ROOT))
     flow(a,m)
 
 if __name__=='__main__':
