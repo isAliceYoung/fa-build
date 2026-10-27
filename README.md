@@ -28,6 +28,7 @@ After GitHub read authorization, the bootstrap scans private repository tags thr
 
 | Input | Fixed commit | Installer |
 | --- | --- | --- |
+| `1.3.0` | `ead5e46cba31d50e0be53738c4d855581c1c674e` (`v1.3.0`) | Desktop/settings refresh with Lucide, persistent image wallpapers and VPS clock; existing source updater/data preservation |
 | `1.2.0` | `cb280d280d35212b23bd823e8f64727f6811d9c6` (`v1.2.0`) | CC isolated installation with pinned source updates, progress and verified user-data protection |
 | `1.1.0` | `07f9adf18e133534e02ce9d9500af45dc8afb90b` (`v1.1.0`) | CC isolated installation with settings updates and simplified login UI |
 | `1.0.0` | `73e544e32b67bee2ac17cca7f21b7cf5692d0482` (`v1.0.0`) | Existing CC isolated build/sign/verify/fresh installation |
