@@ -144,7 +144,7 @@ class Versions(unittest.TestCase):
         with mock.patch.object(ui,'KEYS',root/'keys'),mock.patch.object(ui,'SOURCES',root/'sources'), \
              mock.patch.object(ui.tools,'initial'),mock.patch.object(ui.tools.diag,'begin'), \
              mock.patch.object(ui.private,'PrivateSource',Source),mock.patch.object(ui,'acquire',side_effect=acquire) as fetch, \
-             mock.patch.object(ui,'load',side_effect=load),contextlib.redirect_stdout(io.StringIO()):
+             mock.patch.object(ui,'load',side_effect=load),mock.patch.object(ui,'display_credentials'),contextlib.redirect_stdout(io.StringIO()):
             result=ui.flow(args,catalogue,read)
         return result,events,selected,coordinator,args,fetch
 

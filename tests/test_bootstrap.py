@@ -47,7 +47,8 @@ class Interaction(unittest.TestCase):
         a=types.SimpleNamespace(mode='local-test')
         coordinator=mock.Mock()
         if install_error:coordinator.deploy.side_effect=ValueError('FINAL_HEALTH_NOT_READY')
-        with mock.patch.object(ui.tools.diag,'append'),mock.patch.object(ui.tools,'initial'),mock.patch.object(ui.private,'PrivateSource',return_value=Source()),mock.patch.object(ui,'load',return_value=coordinator):
+        with mock.patch.object(ui.tools.diag,'append'),mock.patch.object(ui.tools,'initial'),mock.patch.object(ui.private,'PrivateSource',return_value=Source()),mock.patch.object(ui,'load',return_value=coordinator),mock.patch.object(ui,'display_credentials',return_value=True) as display:
+            self.display=display
             def read(_):
                 if '版本' in _:return '1.0.0'
                 if existing:raise AssertionError('Valid existing identity must not prompt again')
@@ -67,16 +68,13 @@ class Interaction(unittest.TestCase):
     def test_authorized_y_delegates_once_after_fixed_source_hashes(self):
         value,coordinator=self.fixture('y');self.assertTrue(value);coordinator.deploy.assert_called_once()
 
-    def test_success_prints_password_command_without_reading_passwords(self):
+    def test_success_automatically_displays_credentials_after_deployment(self):
         self.fixture('y')
-        self.assertIn('cat /etc/webdesktop-isolated/login.json',self.output.getvalue())
-        with mock.patch('builtins.open',side_effect=AssertionError('Credentials must not be read')),contextlib.redirect_stdout(io.StringIO()) as output:
-            ui.credential_help()
-        self.assertIn('cat /etc/webdesktop-isolated/login.json',output.getvalue())
+        self.display.assert_called_once()
 
-    def test_failed_health_or_installation_never_prints_password_command(self):
+    def test_failed_health_or_installation_never_displays_credentials(self):
         with self.assertRaisesRegex(ValueError,'FINAL_HEALTH_NOT_READY'):self.fixture('y',install_error=True)
-        self.assertNotIn('cat /etc/webdesktop-isolated/login.json',self.output.getvalue())
+        self.display.assert_not_called()
 
     def test_existing_valid_key_live_authorized_without_prompt(self):
         value,coordinator=self.fixture('',existing=True);self.assertTrue(value);coordinator.deploy.assert_called_once()
@@ -134,5 +132,63 @@ class Interaction(unittest.TestCase):
                 (root/'unknown').write_text('preserve')
                 with self.assertRaisesRegex(ValueError,'UNKNOWN_TOOLCHAIN_ROOT'):ui.tools.node(private)
                 self.assertEqual((root/'unknown').read_text(),'preserve')
+
+class CredentialDisplay(unittest.TestCase):
+    def display(self,unsafe=False,no_terminal=False,child_failure=False,timeout=False,root=True):
+        source=mock.Mock()
+        if unsafe:source.check_node.side_effect=ui.private.Failure('PERMISSIONS','fixture protected file rejected')
+        class Terminal(io.StringIO):
+            def close(self):pass  # Preserve the simulated terminal for assertions.
+        terminal=Terminal();out=io.StringIO();err=io.StringIO()
+        def cat(*args,**kwargs):
+            if timeout:raise ui.subprocess.TimeoutExpired(args[0],10)
+            if not child_failure:kwargs['stdout'].write('{"DESKTOP_PASSWORD":"initial-test-password"}\n')
+            return types.SimpleNamespace(returncode=1 if child_failure else 0,stderr='unreviewed child output')
+        with contextlib.ExitStack() as stack:
+            stack.enter_context(mock.patch.object(ui.os,'geteuid',return_value=0 if root else 1000,create=True))
+            for name in ('O_NOCTTY','O_CLOEXEC','O_NOFOLLOW'):
+                stack.enter_context(mock.patch.object(ui.os,name,getattr(ui.os,name,0),create=True))
+            opened=stack.enter_context(mock.patch.object(ui.os,'open',return_value=91,side_effect=OSError('no terminal') if no_terminal else None))
+            stack.enter_context(mock.patch.object(ui.os,'isatty',return_value=True))
+            stack.enter_context(mock.patch.object(ui.os,'fdopen',return_value=terminal))
+            run=stack.enter_context(mock.patch.object(ui.subprocess,'run',side_effect=cat))
+            logged=stack.enter_context(mock.patch.object(ui.tools.diag,'append'))
+            stack.enter_context(contextlib.redirect_stdout(out));stack.enter_context(contextlib.redirect_stderr(err))
+            result=ui.display_credentials(source)
+        self.assertNotIn('initial-test-password',out.getvalue()+err.getvalue())
+        self.assertNotIn('unreviewed child output',out.getvalue()+err.getvalue())
+        logged.assert_not_called()
+        return result,source,terminal,out.getvalue(),run,opened
+
+    def test_cat_executes_directly_to_terminal_after_protected_path_checks(self):
+        result,source,terminal,out,run,opened=self.display()
+        self.assertTrue(result);self.assertIn('initial-test-password',terminal.getvalue())
+        source.directory.assert_called_once_with(ui.CREDENTIALS.parent,private=True)
+        source.check_node.assert_called_once_with(ui.CREDENTIALS,private=True)
+        self.assertEqual(run.call_args[0][0],['/usr/bin/cat','--','/etc/webdesktop-isolated/login.json'])
+        self.assertIs(run.call_args[1]['stdout'],terminal)
+        self.assertEqual(run.call_args[1]['stderr'],ui.subprocess.DEVNULL)
+        self.assertEqual(run.call_args[1]['env'],{'PATH':'/usr/bin:/bin','LANG':'C.UTF-8'})
+        self.assertNotIn('cat /etc/webdesktop-isolated/login.json',out)
+
+    def test_no_terminal_never_sends_passwords_to_redirected_stdout(self):
+        result,_,terminal,out,run,_=self.display(no_terminal=True)
+        self.assertFalse(result);run.assert_not_called();self.assertEqual(terminal.getvalue(),'')
+        self.assertIn('cat /etc/webdesktop-isolated/login.json',out)
+
+    def test_unsafe_credential_path_is_not_read(self):
+        result,_,terminal,_,run,opened=self.display(unsafe=True)
+        self.assertFalse(result);run.assert_not_called();opened.assert_not_called()
+        self.assertEqual(terminal.getvalue(),'')
+
+    def test_cat_error_or_timeout_keeps_successful_installation_and_hides_raw_output(self):
+        for options in ({'child_failure':True},{'timeout':True}):
+            result,_,terminal,out,run,_=self.display(**options)
+            self.assertFalse(result);run.assert_called_once()
+            self.assertIn('安装已成功',out);self.assertNotIn('initial-test-password',terminal.getvalue())
+
+    def test_nonroot_cannot_display_initial_credentials(self):
+        with self.assertRaisesRegex(ValueError,'ROOT_REQUIRED'):self.display(root=False)
+
 
 if __name__=='__main__':unittest.main(verbosity=2)

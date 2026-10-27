@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import re
 import socket
+import subprocess
 import sys
 import tempfile
 
@@ -19,6 +20,7 @@ tools=load('public_platform_tools',HERE/'platform_tools.py')
 REPO='git@github.com:isAliceYoung/fa.git'
 KEYS=Path('/root/.ssh/webdesktop-build-fa')
 SOURCES=Path('/opt/webdesktop-private-build/sources')
+CREDENTIALS=Path('/etc/webdesktop-isolated/login.json')
 
 def consent(read=input):
     try:value=read('是否已完成 GitHub 授权？[y/N]:').strip()
@@ -84,9 +86,30 @@ def available_versions(catalogue,source):
     return dict(catalogue,versions=versions,default_version=default)
 
 
-def credential_help():
-    # Print an instruction only. Never read or echo the protected credentials.
-    print('查看初始桌面和管理员密码（在本机 root 终端执行）：\ncat /etc/webdesktop-isolated/login.json')
+def display_credentials(source):
+    """Run cat after success, writing only to the operator's controlling terminal."""
+    tools.require(os.geteuid()==0,'ROOT_REQUIRED')
+    try:
+        source.directory(CREDENTIALS.parent,private=True)
+        source.check_node(CREDENTIALS,private=True)
+        fd=os.open('/dev/tty',os.O_WRONLY|os.O_NOCTTY|os.O_CLOEXEC|os.O_NOFOLLOW)
+        if not os.isatty(fd):
+            os.close(fd)
+            raise OSError('NO_CONTROLLING_TERMINAL')
+    except (OSError,ValueError,private.Failure):
+        print('安装已成功；当前无法安全自动显示初始密码，请在本机 root 终端执行：cat /etc/webdesktop-isolated/login.json')
+        return False
+    with os.fdopen(fd,'w',encoding='utf-8') as terminal:
+        terminal.write('\n初始桌面和管理员登录信息：\n');terminal.flush()
+        try:
+            result=subprocess.run(['/usr/bin/cat','--',CREDENTIALS.as_posix()],stdin=subprocess.DEVNULL,stdout=terminal,
+                                  stderr=subprocess.DEVNULL,env={'PATH':'/usr/bin:/bin','LANG':'C.UTF-8'},timeout=10,check=False)
+        except (OSError,subprocess.TimeoutExpired):result=None
+        if result is None or result.returncode!=0:
+            print('安装已成功；自动读取初始密码未完成，请在本机 root 终端执行：cat /etc/webdesktop-isolated/login.json')
+            return False
+        terminal.write('\n');terminal.flush()
+    return True
 
 
 def acquire(source):
@@ -144,7 +167,7 @@ def flow(a,catalogue,read=input):
     else:
         coordinator=load('approved_private_deployment',repo/m['entrypoint'])
         coordinator.deploy(a,tools)
-        credential_help()
+        display_credentials(source)
     return True
 
 def main(argv=None):
