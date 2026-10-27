@@ -2,7 +2,7 @@
 
 The isolated installation entrypoint now also installs the official Claude Desktop Linux package and GNOME Keyring after WebDesktop passes its health check. Anthropic's APT signing key must match `31DDDE24DDFAB679F42D7BD2BAA929FF1A7ECACE`; unknown existing APT configuration is not overwritten. This does not change Beta installation or any published version-to-commit mapping.
 
-**Package installation is not Claude GUI acceptance.** The current offline GUI worker cannot sign in to Claude; this installer does not weaken its sandbox, grant KVM access, or automatically register an unusable launcher. Debian package installation and login/keyring/resource tests remain NOT RUN locally. Component errors preserve the working desktop and `/var/lib/webdesktop-claude-bootstrap/status.json`; after root reviews the cause, retry only this component with `python3 -I /root/fa-build/scripts/claude_desktop.py`. Do not rerun the full fresh installer over an installed desktop.
+**Package installation is not Claude GUI acceptance.** From WebDesktop 1.4.0, registered GUI apps share the existing filtered public HTTP/HTTPS namespace; host/private/metadata access remains blocked. Earlier versions retain their fixed system-layer behavior. This installer does not weaken Electron's sandbox, grant KVM access, or automatically register a Claude launcher. Debian package installation and Claude login/keyring/resource tests remain NOT RUN locally. Component errors preserve the working desktop and `/var/lib/webdesktop-claude-bootstrap/status.json`; after root reviews the cause, retry only this component with `python3 -I /root/fa-build/scripts/claude_desktop.py`. Do not rerun the full fresh installer over an installed desktop.
 
 This public repository contains only a small, auditable Debian 12 amd64 bootstrap. WebDesktop application code, runtime packages, databases and user data remain outside this repository, in the separately authorized private project.
 
@@ -28,6 +28,7 @@ After GitHub read authorization, the bootstrap scans private repository tags thr
 
 | Input | Fixed commit | Installer |
 | --- | --- | --- |
+| `1.4.0` | `a31c680f4e85111a161466941a838409fff9036e` (`v1.4.0`) | Filtered GUI web access and Ctrl+C/X/V clipboard; removes GUI toolbars. Changes system-layer contracts; existing installations need root maintenance. |
 | `1.3.0` | `ead5e46cba31d50e0be53738c4d855581c1c674e` (`v1.3.0`) | Desktop/settings refresh with Lucide, persistent image wallpapers and VPS clock; existing source updater/data preservation |
 | `1.2.0` | `cb280d280d35212b23bd823e8f64727f6811d9c6` (`v1.2.0`) | CC isolated installation with pinned source updates, progress and verified user-data protection |
 | `1.1.0` | `07f9adf18e133534e02ce9d9500af45dc8afb90b` (`v1.1.0`) | CC isolated installation with settings updates and simplified login UI |
@@ -104,6 +105,8 @@ From 1.2.0, new signed isolated installations enable the web update service by d
 For Beta, the original check command is `bash /usr/local/lib/webdesktop-deploy/check.sh`. Initial credential seeds are in `/home/webdesktop/webdesktop/.env`; read locally as root/the application user, never publish. Beta keeps its original `http://127.0.0.1:3000` binding and network behavior. `bash /root/fa-build/install.sh status` reads preparation journals, including Beta. Interrupted installation requires manual review; no reset or automatic replay is provided.
 
 ## Evidence limits
+
+The 1.4.0 catalogue retains all previous version-to-commit mappings and pins the new private entrypoint/helper digests. Its local routing/authorization/credential-display/component tests and public-tree/history audit do not execute GitHub SSH authorization or install a VPS. This version changes GUI system layers; existing 1.2/1.3 deployments need separately reviewed root maintenance, rather than bypassing the web updater's compatibility refusal. Use the fresh command only on a new server without deployment state.
 
 The automatic credential-display/live-tag follow-up passed 45 local bootstrap/version tests, Python syntax checks and shell syntax checks. Public working files and all historical trees were audited. Tests simulate SSH tags, installation/health outcomes and the Linux controlling terminal/cat process; actual Linux terminal display is NOT RUN. No actual VPS was contacted or modified. The existing private updater's data/authentication subset ran 43 local cases (42 passed, one Linux-only case skipped), which is not evidence of a real Debian upgrade preserving passwords.
 

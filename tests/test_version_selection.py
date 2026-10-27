@@ -28,8 +28,10 @@ beta=module('version_beta',ROOT/'scripts/beta_install.py')
 class Versions(unittest.TestCase):
     def test_catalogue_has_reviewed_fixed_versions(self):
         m=ui.metadata()
-        self.assertEqual(set(m['versions']),{'1.3.0','1.2.0','1.1.0','1.0.0','beta0.1.0'})
-        self.assertEqual(m['default_version'],'1.3.0')
+        self.assertEqual(set(m['versions']),{'1.4.0','1.3.0','1.2.0','1.1.0','1.0.0','beta0.1.0'})
+        self.assertEqual(m['default_version'],'1.4.0')
+        self.assertEqual(m['versions']['1.4.0']['commit'],'a31c680f4e85111a161466941a838409fff9036e')
+        self.assertEqual(m['versions']['1.4.0']['tag'],'v1.4.0')
         self.assertEqual(m['versions']['1.3.0']['commit'],'ead5e46cba31d50e0be53738c4d855581c1c674e')
         self.assertEqual(m['versions']['1.3.0']['tag'],'v1.3.0')
         self.assertEqual(m['versions']['1.2.0']['commit'],'cb280d280d35212b23bd823e8f64727f6811d9c6')
@@ -46,7 +48,7 @@ class Versions(unittest.TestCase):
             selected=ui.select_version(ui.metadata(),read=lambda _:next(answers))
         self.assertEqual((selected['engine'],selected['branch']),('legacy-beta','main'))
         with contextlib.redirect_stdout(io.StringIO()):
-            for version in ('1.3.0','1.2.0','1.1.0','1.0.0','beta0.1.0'):
+            for version in ('1.4.0','1.3.0','1.2.0','1.1.0','1.0.0','beta0.1.0'):
                 self.assertEqual(ui.select_version(ui.metadata(),version)['version'],version)
             with self.assertRaisesRegex(ValueError,'UNKNOWN_INSTALL_VERSION'):
                 ui.select_version(ui.metadata(),'latest')
@@ -89,9 +91,10 @@ class Versions(unittest.TestCase):
         self.assertEqual(result['versions']['1.2.0']['commit'],current)
 
     def test_unpublished_tag_is_not_offered_for_installation(self):
-        rows='\n'.join(row for row in self.tag_rows().splitlines() if not row.endswith('/v1.3.0'))
-        result=self.live_catalogue(rows)
-        self.assertNotIn('1.3.0',result['versions']);self.assertEqual(result['default_version'],'1.2.0')
+        for missing,default in [('1.4.0','1.3.0'),('1.3.0','1.4.0')]:
+            rows='\n'.join(row for row in self.tag_rows().splitlines() if not row.endswith('/v'+missing))
+            result=self.live_catalogue(rows)
+            self.assertNotIn(missing,result['versions']);self.assertEqual(result['default_version'],default)
 
     def test_moved_registered_tag_refuses_instead_of_using_latest_head(self):
         current=ui.metadata()['versions']['1.2.0']['commit']
