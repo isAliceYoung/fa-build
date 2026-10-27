@@ -7,7 +7,8 @@ import re
 
 def main():
     if os.geteuid()!=0:raise SystemExit('root required')
-    for path in (Path('/var/lib/webdesktop-bootstrap/state.json'),Path('/var/lib/webdesktop-fresh/state.json')):
+    for path in (Path('/var/lib/webdesktop-bootstrap/state.json'),Path('/var/lib/webdesktop-fresh/state.json'),
+                 Path('/var/lib/webdesktop-beta-bootstrap/state.json')):
         if not os.path.lexists(path):continue
         for parent in path.parents:
             s=parent.lstat()

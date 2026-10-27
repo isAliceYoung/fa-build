@@ -29,11 +29,34 @@ def consent(read=input):
 
 def metadata():
     data=json.loads((ROOT/'release.json').read_text())
-    tools.require(set(data)=={'schema','repository','branch','commit','entrypoint','entrypoint_sha256','source_helper_sha256'},'RELEASE_METADATA_FIELDS')
-    tools.require(data['schema']==1 and data['repository']==REPO and data['branch']=='feature/CC'
-                  and re.fullmatch('[a-f0-9]{40}',data['commit']) and data['entrypoint']=='webdesktop-deploy/scripts/interactive_deploy.py','APPROVED_METADATA_REQUIRED')
-    for k in ('entrypoint_sha256','source_helper_sha256'):tools.require(re.fullmatch('[a-f0-9]{64}',data[k]),'SOURCE_DIGEST_REQUIRED')
+    tools.require(set(data)=={'schema','repository','default_version','versions','source_helper_sha256'},'RELEASE_METADATA_FIELDS')
+    tools.require(data['schema']==2 and data['repository']==REPO and isinstance(data['versions'],dict)
+                  and data['default_version'] in data['versions'],'APPROVED_METADATA_REQUIRED')
+    tools.require(re.fullmatch('[a-f0-9]{64}',data['source_helper_sha256'] or ''),'SOURCE_DIGEST_REQUIRED')
+    for version,item in data['versions'].items():
+        tools.require(re.fullmatch(r'(?:beta)?[0-9]+\.[0-9]+\.[0-9]+',version) and isinstance(item,dict),'APPROVED_METADATA_REQUIRED')
+        tools.require(set(item)=={'branch','commit','tag','engine','entrypoint','entrypoint_sha256'},'RELEASE_METADATA_FIELDS')
+        beta=version.startswith('beta')
+        tools.require(item['engine']==('legacy-beta' if beta else 'isolated')
+                      and item['branch']==('main' if beta else 'feature/CC')
+                      and item['entrypoint']==('webdesktop-deploy/install.sh' if beta else 'webdesktop-deploy/scripts/interactive_deploy.py')
+                      and re.fullmatch(r'v[0-9]+\.[0-9]+\.[0-9]+(?:-beta\.[0-9]+)?',item['tag'])
+                      and re.fullmatch('[a-f0-9]{40}',item['commit'] or '')
+                      and re.fullmatch('[a-f0-9]{64}',item['entrypoint_sha256'] or ''),'APPROVED_METADATA_REQUIRED')
     return data
+
+def select_version(catalogue,requested=None,read=input):
+    print('可安装版本：'+', '.join(catalogue['versions']))
+    if requested is not None:
+        tools.require(requested in catalogue['versions'],'UNKNOWN_INSTALL_VERSION')
+        return dict(catalogue['versions'][requested],version=requested)
+    while True:
+        try:value=read('请输入你要安装的版本：').strip()
+        except EOFError:return None
+        if not value:return None
+        if value in catalogue['versions']:
+            return dict(catalogue['versions'][value],version=value)
+        print('没有这个版本，请输入上面列出的完整版本号；直接回车退出。')
 
 def acquire(source):
     # A live permission check is mandatory even if a prior exact checkout exists.
@@ -42,7 +65,7 @@ def acquire(source):
         source.directory(SOURCES,create=True)
         tools.require(not any(p.name.startswith('.auth-check-') for p in SOURCES.iterdir()),'RETAINED_AUTH_CHECK_REQUIRES_REVIEW')
         temp=Path(tempfile.mkdtemp(prefix='.auth-check-',dir=SOURCES))
-        check=private.PrivateSource(KEYS,temp/'source',REPO,'feature/CC',source.commit)
+        check=private.PrivateSource(KEYS,temp/'source',REPO,source.branch,source.commit)
         check.clone()
         # Only our successful temporary proof. Failed stages are intentionally retained.
         import shutil
@@ -50,10 +73,13 @@ def acquire(source):
     result=source.clone();tools.require(not result['dirty'],'EXISTING_SOURCE_MODIFIED')
     return source.source
 
-def flow(a,m,read=input):
+def flow(a,catalogue,read=input):
+    if getattr(a,'version',None) is not None:
+        tools.require(a.version in catalogue['versions'],'UNKNOWN_INSTALL_VERSION')
     tools.initial(a.mode)
     print('WebDesktop Installer\n[1/9] Environment checking ... PASS')
-    source=private.PrivateSource(KEYS,SOURCES/m['commit'],REPO,'feature/CC',m['commit'])
+    default=catalogue['versions'][catalogue['default_version']]
+    source=private.PrivateSource(KEYS,SOURCES/default['commit'],REPO,default['branch'],default['commit'])
     tools.diag.begin('authorization')
     if os.path.lexists(source.key) or os.path.lexists(source.key.with_suffix('.pub')):
         # Do not call prepare(): missing/mismatched/unsafe pairs must never be
@@ -64,16 +90,28 @@ def flow(a,m,read=input):
         print('[2/9] GitHub Deploy Key ... READY\n\nPublic key:\n'+source.prepare())
         print('\nhttps://github.com/isAliceYoung/fa/settings/keys\n请添加到 Deploy keys，并保持 Allow write access 未勾选。')
         if not consent(read):print('未授权；没有构建或安装。');return False
+        with source.locked():source.verify_local();source.authorized()
+    m=select_version(catalogue,getattr(a,'version',None),read)
+    if m is None:print('未选择版本；没有构建或安装。');return False
+    tools.require(m['engine']!='legacy-beta' or a.mode=='local-test','BETA_REQUIRES_EXPLICIT_LEGACY_MODE')
+    print('安装版本：'+m['version']+'；固定提交：'+m['commit'])
+    source=private.PrivateSource(KEYS,SOURCES/m['commit'],REPO,m['branch'],m['commit'])
     repo=acquire(source)
     print('[3/9] GitHub authorization ... PASS')
     import hashlib
-    for relative,key in [(m['entrypoint'],'entrypoint_sha256'),('webdesktop-deploy/scripts/private_repo.py','source_helper_sha256')]:
+    checks=[(m['entrypoint'],m['entrypoint_sha256'])]
+    if m['engine']=='isolated':checks.append(('webdesktop-deploy/scripts/private_repo.py',catalogue['source_helper_sha256']))
+    for relative,expected in checks:
         path=repo/relative;source.check_node(path)
-        tools.require(hashlib.sha256(path.read_bytes()).hexdigest()==m[key],'PINNED_SOURCE_MODULE_DIGEST_MISMATCH')
+        tools.require(hashlib.sha256(path.read_bytes()).hexdigest()==expected,'PINNED_SOURCE_MODULE_DIGEST_MISMATCH')
     print('[4/9] Pinned source verification ... PASS')
-    coordinator=load('approved_private_deployment',repo/m['entrypoint'])
-    a.commit=m['commit'];a.source_dir=repo
-    coordinator.deploy(a,tools)
+    a.commit=m['commit'];a.source_dir=repo;a.version=m['version']
+    if m['engine']=='legacy-beta':
+        coordinator=load('public_beta_install',HERE/'beta_install.py')
+        coordinator.deploy(a,tools,private,source)
+    else:
+        coordinator=load('approved_private_deployment',repo/m['entrypoint'])
+        coordinator.deploy(a,tools)
     return True
 
 def main(argv=None):
@@ -83,6 +121,7 @@ def main(argv=None):
     p.add_argument('--ack-local-test-trust',action='store_true');p.add_argument('--authorize-install',action='store_true')
     p.add_argument('--authorize-isolated-egress',action='store_true')
     p.add_argument('--formal-package',type=Path);p.add_argument('--formal-package-sha256')
+    p.add_argument('--version',help='Exact version from the reviewed catalogue; omitted: ask interactively')
     p.add_argument('--admin',action='append',default=['root'])
     a=p.parse_args(argv);os.umask(0o077)
     private.require_platform();m=metadata()

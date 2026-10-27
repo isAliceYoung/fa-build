@@ -45,7 +45,8 @@ def initial(mode):
     require(Path('/proc/1/comm').read_text().strip()=='systemd' and Path('/sys/fs/cgroup/cgroup.controllers').exists(),'SYSTEMD_CGROUP2_REQUIRED')
     mem=dict((x.split(':',1)[0],int(x.split()[1])*1024) for x in Path('/proc/meminfo').read_text().splitlines() if x.split()[1].isdigit())
     capacity(mem['MemTotal'],os.cpu_count() or 1,mem['SwapTotal'],min(shutil.disk_usage(p).free for p in ('/','/opt','/var/cache')),mode)
-    for path in ('/opt/webdesktop','/etc/webdesktop-isolated','/etc/postgresql','/var/lib/postgresql','/var/lib/webdesktop-fresh'):
+    for path in ('/opt/webdesktop','/etc/webdesktop-isolated','/etc/postgresql','/var/lib/postgresql','/var/lib/webdesktop-fresh',
+                 '/etc/webdesktop-deploy.conf','/var/lib/webdesktop-beta-bootstrap'):
         require(not os.path.lexists(path),'EXISTING_INSTALLATION: use status/recovery; do not reinstall')
 
 def existing_node(path):

@@ -24,10 +24,11 @@ GROUPS={
                 'DEDICATED_UNPRIVILEGED_WDBUILD_REQUIRED','EXISTING_PROJECT_IDENTITY'},
     'authorization':{'AUTHORIZATION','HOST_KEY','NETWORK','BRANCH','COMMIT','KEY_PAIR','KEY_MODE','PATH','KEY','CONFIG','PERMISSION','ROOT',
                      'REAUTHORIZE_EXISTING_KEY_REQUIRED','INDEPENDENT_ROOT_TRUST_REQUIRED','REGISTERED_CC_TRUST_REQUIRED',
-                     'HOST_PIN','CONFIG_CHANGED','REMOTE_CHANGED','REPOSITORY','ROOT_REQUIRED','PLATFORM'},
+                     'HOST_PIN','CONFIG_CHANGED','REMOTE_CHANGED','REPOSITORY','ROOT_REQUIRED','PLATFORM','BETA_REQUIRES_EXPLICIT_LEGACY_MODE'},
     'package':{'EXTRACTED_MANIFEST_CHANGED','SOURCE_BUNDLE_CHANGED','UNEXPECTED_EXTRACTED_SOURCE_MODE','SIGNED_CC_RELEASE_REQUIRED',
                'SYSTEM_LAYER_CONTRACT_MISMATCH','PINNED_SOURCE_MODULE_DIGEST_MISMATCH','APPROVED_SOURCE_CHANGED',
-               'RELEASE_SIGNATURE_INVALID','RELEASE_COMMIT_MISMATCH','RELEASE_DIGEST_MISMATCH','RELEASE_ARTIFACT_SIZE_MISMATCH'},
+               'RELEASE_SIGNATURE_INVALID','RELEASE_COMMIT_MISMATCH','RELEASE_DIGEST_MISMATCH','RELEASE_ARTIFACT_SIZE_MISMATCH',
+               'UNKNOWN_INSTALL_VERSION'},
     'resources':{'INSTALL_DISK_RESERVE','INSUFFICIENT_FREE_DISK','INSUFFICIENT_AVAILABLE_SWAP','INSUFFICIENT_RAM_CPU','DISK_RESERVE',
                  'INSUFFICIENT_PREPARATION_DISK','LOCAL_BUILD_REQUIRES_2CPU_2G_RAM','MINIMUM_1G_SWAP_REQUIRED','DISK_SPACE','SOURCE_LIMIT','BUILD_HARDLINK_DISK_RESERVE'},
     'state':{'EXISTING_INSTALLATION','EXISTING_DEPLOYMENT_REFUSED','EXISTING_OR_INTERRUPTED_INSTALL','UNVERIFIED_EARLY_INSTALL_RECOVERY_REQUIRED',
@@ -37,7 +38,7 @@ GROUPS={
                   'FILE_TYPE','MISSING','OWNERSHIP','PERMISSIONS','PROTECTED_PATH_TYPE_MISMATCH','PROTECTED_PATH_OWNER_MODE_MISMATCH',
                   'PROTECTED_PATH_SYMLINK','PROTECTED_PATH_GROUP_MISMATCH','FILE_PERMISSION_DENIED','FILE_NOT_FOUND','FILE_ALREADY_EXISTS',
                   'FILESYSTEM_NO_SPACE','FILESYSTEM_READ_ONLY','FILE_NOT_DIRECTORY','FILE_SYMLINK_LOOP','FILESYSTEM_IO_ERROR',
-                  'BUILD_UNSAFE_MODE','BUILD_SPECIAL_OR_HARDLINK','BUILD_EXTERNAL_HARDLINK'},
+                  'BUILD_UNSAFE_MODE','BUILD_SPECIAL_OR_HARDLINK','BUILD_EXTERNAL_HARDLINK','UNSAFE_BETA_CHECKOUT'},
     'tools':{'SUBPROCESS_FAILED','SUBPROCESS_TIMEOUT','PREFLIGHT_TOOL_REQUIRED','COMMAND','TIMEOUT','TOOL'},
     'network':{'HOST_NETWORK_REVIEW_REQUIRED'},
     'services':{'HOST_SERVICE_REVIEW_REQUIRED'},
@@ -54,7 +55,7 @@ PREFIX='WD_DEPLOY_ERROR '
 PRIVATE_MODULES={'install_requirements.py','interactive_deploy.py','deployment_package.py','fresh_install.py','staging_install.py',
                  'isolated_deploy.py','private_repo.py','private_release.py','release_trust.py','staging_bundle.py','system_layers.py',
                  'resource_policy.py','preparation_swap.py','deploy_diagnostics.py'}
-PUBLIC_MODULES={'interactive.py','platform_tools.py','private_repo.py','status.py','diagnostics.py'}
+PUBLIC_MODULES={'interactive.py','platform_tools.py','private_repo.py','status.py','diagnostics.py','beta_install.py'}
 MODULES=PRIVATE_MODULES|{'public/'+name for name in PUBLIC_MODULES}
 
 # Every emitted reason is static and reviewed. stderr and exception messages
@@ -72,6 +73,9 @@ REASONS={code:{
     'python':'An unreviewed exception occurred; its message is hidden. Inspect the reported source line.',
 }[category] for category,codes in GROUPS.items() for code in codes}
 REASONS.update({
+    'BETA_REQUIRES_EXPLICIT_LEGACY_MODE':'Legacy Beta cannot use the isolated formal signature workflow; explicitly select the local-test legacy entrypoint.',
+    'UNKNOWN_INSTALL_VERSION':'The requested exact version is absent from this reviewed public release catalogue.',
+    'UNSAFE_BETA_CHECKOUT':'The new offline Beta checkout has an unexpected file identity, owner, mode or link; existing files are retained.',
     'HOST_ACCOUNT_AUDIT_FAILED':'A read-only host-account permission probe failed; inspect the tool and exit code.',
     'HOST_ACCOUNT_SSH_REVIEW_REQUIRED':'SSH keys, conditional/custom authorization, or unsafe SSH paths prevent automatic account approval.',
     'HOST_ACCOUNT_SUDO_REVIEW_REQUIRED':'Sudo privilege or an uncertain sudo policy prevents automatic account approval.',

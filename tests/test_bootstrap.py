@@ -25,7 +25,7 @@ class Interaction(unittest.TestCase):
         root=Path(temp.name)/'source'
         if existing:(Path(temp.name)/'deploy_key').write_text('nonsecret fixture marker')
         class Source:
-            source=root;commit='a'*40;key=Path(temp.name)/'deploy_key'
+            source=root;commit='a'*40;branch='feature/CC';key=Path(temp.name)/'deploy_key'
             def prepare(self):
                 if existing:raise AssertionError('Existing key must not be regenerated or repaired')
                 return 'ssh-ed25519 TEST_PUBLIC_FIXTURE_ONLY fixture'
@@ -42,11 +42,12 @@ class Interaction(unittest.TestCase):
                     p=root/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(data)
                 return dict(dirty=False,commit='a'*40)
             def check_node(self,*args):pass
-        m=dict(commit='a'*40,entrypoint='webdesktop-deploy/scripts/interactive_deploy.py',entrypoint_sha256=hashlib.sha256(b'# approved fixture').hexdigest(),source_helper_sha256=hashlib.sha256(b'# helper fixture').hexdigest())
+        m=dict(default_version='1.0.0',versions={'1.0.0':dict(commit='a'*40,branch='feature/CC',engine='isolated',entrypoint='webdesktop-deploy/scripts/interactive_deploy.py',entrypoint_sha256=hashlib.sha256(b'# approved fixture').hexdigest())},source_helper_sha256=hashlib.sha256(b'# helper fixture').hexdigest())
         a=types.SimpleNamespace(mode='local-test')
         coordinator=mock.Mock()
         with mock.patch.object(ui.tools.diag,'append'),mock.patch.object(ui.tools,'initial'),mock.patch.object(ui.private,'PrivateSource',return_value=Source()),mock.patch.object(ui,'load',return_value=coordinator):
             def read(_):
+                if '版本' in _:return '1.0.0'
                 if existing:raise AssertionError('Valid existing identity must not prompt again')
                 return answer
             with contextlib.redirect_stdout(io.StringIO()) as output:result=ui.flow(a,m,read)
