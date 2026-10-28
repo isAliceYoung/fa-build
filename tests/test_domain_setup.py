@@ -149,6 +149,7 @@ class InstallOrder(unittest.TestCase):
         args=types.SimpleNamespace(mode='local-test')
         with patch.object(UI.tools,'initial'),patch.object(UI.tools.diag,'append'), \
              patch.object(UI.private,'PrivateSource',return_value=source),patch.object(UI,'authorize_source',return_value=True), \
+             patch.object(UI,'latest_catalogue',side_effect=lambda value:value), \
              patch.object(UI,'available_versions',return_value=catalogue),patch.object(UI,'select_version',return_value=version), \
              patch.object(UI,'acquire',return_value=root),patch.object(UI,'load',side_effect=load), \
              patch.object(UI,'post_install_domain',side_effect=domain), \

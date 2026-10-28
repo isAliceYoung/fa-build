@@ -11,6 +11,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+import urllib.request
 
 HERE=Path(__file__).resolve().parent
 ROOT=HERE.parent
@@ -22,6 +23,8 @@ REPO='git@github.com:isAliceYoung/fa.git'
 KEYS=Path('/root/.ssh/webdesktop-build-fa')
 SOURCES=Path('/opt/webdesktop-private-build/sources')
 CREDENTIALS=Path('/etc/webdesktop-isolated/login.json')
+CATALOGUE_URL='https://raw.githubusercontent.com/isAliceYoung/fa-build/main/release.json'
+_LOCAL_CATALOGUE=object()
 INSTALL_RECORDS=(Path('/etc/webdesktop-isolated/state.json'),Path('/var/lib/webdesktop-bootstrap/state.json'),Path('/var/lib/webdesktop-fresh/state.json'))
 
 def reuse_installation():
@@ -108,15 +111,18 @@ def consent(read=input):
     if value not in ('','n','N'):print('输入无效；未授权，安全退出。')
     return False
 
-def metadata():
-    data=json.loads((ROOT/'release.json').read_text())
-    tools.require(set(data)=={'schema','repository','default_version','versions','source_helper_sha256'},'RELEASE_METADATA_FIELDS')
-    tools.require(data['schema']==2 and data['repository']==REPO and isinstance(data['versions'],dict)
+def metadata(data=_LOCAL_CATALOGUE):
+    if data is _LOCAL_CATALOGUE:data=json.loads((ROOT/'release.json').read_text())
+    tools.require(isinstance(data,dict) and set(data)=={'schema','repository','default_version','versions','source_helper_sha256'},'RELEASE_METADATA_FIELDS')
+    tools.require(type(data['schema']) is int and data['schema']==2 and data['repository']==REPO and isinstance(data['versions'],dict)
+                  and 0<len(data['versions'])<=128 and isinstance(data['default_version'],str)
                   and data['default_version'] in data['versions'],'APPROVED_METADATA_REQUIRED')
-    tools.require(re.fullmatch('[a-f0-9]{64}',data['source_helper_sha256'] or ''),'SOURCE_DIGEST_REQUIRED')
+    tools.require(isinstance(data['source_helper_sha256'],str) and re.fullmatch('[a-f0-9]{64}',data['source_helper_sha256']),'SOURCE_DIGEST_REQUIRED')
     for version,item in data['versions'].items():
-        tools.require(re.fullmatch(r'(?:beta)?[0-9]+\.[0-9]+\.[0-9]+',version) and isinstance(item,dict),'APPROVED_METADATA_REQUIRED')
+        tools.require(isinstance(version,str) and re.fullmatch(r'(?:beta)?[0-9]{1,6}\.[0-9]{1,6}\.[0-9]{1,6}',version)
+                      and isinstance(item,dict),'APPROVED_METADATA_REQUIRED')
         tools.require(set(item)=={'branch','commit','tag','engine','entrypoint','entrypoint_sha256'},'RELEASE_METADATA_FIELDS')
+        tools.require(all(isinstance(value,str) for value in item.values()),'APPROVED_METADATA_REQUIRED')
         beta=version.startswith('beta')
         tools.require(item['engine']==('legacy-beta' if beta else 'isolated')
                       and item['branch']==('main' if beta else 'feature/CC')
@@ -124,7 +130,46 @@ def metadata():
                       and re.fullmatch(r'v[0-9]+\.[0-9]+\.[0-9]+(?:-beta\.[0-9]+)?',item['tag'])
                       and re.fullmatch('[a-f0-9]{40}',item['commit'] or '')
                       and re.fullmatch('[a-f0-9]{64}',item['entrypoint_sha256'] or ''),'APPROVED_METADATA_REQUIRED')
+        tools.require(bool(re.fullmatch(re.escape('v'+version[4:])+r'-beta\.[1-9][0-9]*',item['tag'])) if beta
+                      else item['tag']=='v'+version,'APPROVED_METADATA_REQUIRED')
     return data
+
+
+class NoCatalogueRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self,*args,**kwargs):raise ValueError('NETWORK')
+
+
+def latest_catalogue(baseline):
+    """Refresh publisher metadata only; never execute downloaded public code.
+
+    This explicitly trusts the official HTTPS catalogue as the version authority,
+    like the existing source updater. SSH tag/commit and file hashes follow.
+    """
+    print('正在获取最新可安装版本目录…',flush=True)
+    request=urllib.request.Request(CATALOGUE_URL,headers={
+        'User-Agent':'WebDesktop-version-discovery/1.0','Cache-Control':'no-cache'})
+    opener=urllib.request.build_opener(urllib.request.ProxyHandler({}),NoCatalogueRedirect())
+    try:
+        with opener.open(request,timeout=20) as response:
+            tools.require(response.status==200 and response.geturl()==CATALOGUE_URL,'NETWORK')
+            raw=response.read(65537)
+    except Exception:
+        print('无法获取最新版本目录；本次停止，请检查网络后重试。')
+        raise ValueError('NETWORK') from None
+    tools.require(len(raw)<=65536,'VERSION_TAG_LIST_TOO_LARGE')
+    def pairs(items):
+        tools.require(len(items)==len({key for key,_ in items}),'VERSION_TAG_LIST_INVALID')
+        return dict(items)
+    try:value=json.loads(raw,object_pairs_hook=pairs)
+    except (ValueError,UnicodeError):raise ValueError('VERSION_TAG_LIST_INVALID') from None
+    value=metadata(value)
+    if value['source_helper_sha256']!=baseline['source_helper_sha256']:
+        print('最新目录使用了不同的源码授权协议；请先审核并更新 fa-build 引导器。')
+        raise ValueError('PINNED_SOURCE_MODULE_DIGEST_MISMATCH')
+    for version in baseline['versions'].keys() & value['versions'].keys():
+        tools.require(value['versions'][version]==baseline['versions'][version],'PUBLISHED_VERSION_TAG_MISMATCH')
+    return value
+
 
 def select_version(catalogue,requested=None,read=input):
     print('可安装版本：'+', '.join(catalogue['versions']))
@@ -137,7 +182,7 @@ def select_version(catalogue,requested=None,read=input):
         if not value:return None
         if value in catalogue['versions']:
             return dict(catalogue['versions'][value],version=value)
-        print('没有这个版本，请输入上面列出的完整版本号；直接回车退出。')
+        print('该版本不可用，请输入上面列出的完整版本号；直接回车退出。')
 
 def available_versions(catalogue,source):
     """Intersect reviewed metadata with live private tags; never install an unknown tag."""
@@ -160,6 +205,10 @@ def available_versions(catalogue,source):
         tools.require(actual==item['commit'],'PUBLISHED_VERSION_TAG_MISMATCH')
         versions[version]=item
     tools.require(versions,'NO_APPROVED_PUBLISHED_VERSIONS')
+    def order(version):
+        beta=version.startswith('beta')
+        return (not beta,tuple(map(int,(version[4:] if beta else version).split('.'))))
+    versions={version:versions[version] for version in sorted(versions,key=order,reverse=True)}
     default=catalogue['default_version'] if catalogue['default_version'] in versions else next(iter(versions))
     print('已核验私有仓库版本标签；仅显示已登记且提交匹配的版本。')
     return dict(catalogue,versions=versions,default_version=default)
@@ -236,6 +285,7 @@ def flow(a,catalogue,read=input):
     source=private.PrivateSource(KEYS,SOURCES/default['commit'],REPO,default['branch'],default['commit'])
     tools.diag.begin('authorization')
     if not authorize_source(source,read):return False
+    catalogue=latest_catalogue(catalogue)
     catalogue=available_versions(catalogue,source)
     m=select_version(catalogue,getattr(a,'version',None),read)
     if m is None:print('未选择版本；没有构建或安装。');return False

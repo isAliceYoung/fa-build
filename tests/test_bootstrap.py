@@ -63,7 +63,7 @@ class Interaction(unittest.TestCase):
         a=types.SimpleNamespace(mode='local-test')
         coordinator=mock.Mock()
         if install_error:coordinator.deploy.side_effect=ValueError('FINAL_HEALTH_NOT_READY')
-        with mock.patch.object(ui.tools.diag,'append'),mock.patch.object(ui.tools,'initial'),mock.patch.object(ui.private,'PrivateSource',return_value=Source()),mock.patch.object(ui,'load',return_value=coordinator),mock.patch.object(ui,'display_credentials',return_value=True) as display:
+        with mock.patch.object(ui.tools.diag,'append'),mock.patch.object(ui.tools,'initial'),mock.patch.object(ui.private,'PrivateSource',return_value=Source()),mock.patch.object(ui,'latest_catalogue',side_effect=lambda value:value),mock.patch.object(ui,'load',return_value=coordinator),mock.patch.object(ui,'display_credentials',return_value=True) as display:
             self.display=display
             def read(_):
                 if '版本' in _:return '1.0.0'
