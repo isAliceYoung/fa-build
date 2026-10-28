@@ -1,5 +1,13 @@
 # WebDesktop Public Bootstrap
 
+## Administrator-managed HTTPS domains (development support)
+
+The bootstrap accepts `--domain-config /root/webdesktop-domain.json` for a future reviewed domain-capable private release. This is an administrator-provisioned per-VPS handoff, not user enrollment. The Cloudflare account/zone API token stays on the administrator's control machine; only the individual Tunnel credential reaches its VPS. A capable coordinator installs on loopback and binds the explicitly approved HTTPS hostname; successful terminal output separates the user's URL/password from administrator-only credentials. Passwords never go to ordinary stdout or diagnostic logs.
+
+**No released version currently declares this capability.** Existing 1.4.0/older mappings and Beta remain fixed. Passing this option to an old release stops before building/installing (`DOMAIN_CAPABLE_RELEASE_REQUIRED`, or `DOMAIN_BETA_NOT_SUPPORTED`). Do not use a historical release or edit its tag to enable this feature. A new audited release/catalogue entry and an administrator-provisioned handoff are required before this becomes a usable domain installation command. No existing VPS migration is performed. The account-side provisioner and application code remain private; no Cloudflare API calls or real VPS tests were performed in this development change.
+
+Private implementation checkpoint: `032ada4e233e91b93591e54928a30a010ba62c8a` on `feature/CC` (development, not a new installable version). This checkpoint must not be substituted into an old release entry.
+
 The isolated installation entrypoint now also installs the official Claude Desktop Linux package and GNOME Keyring after WebDesktop passes its health check. Anthropic's APT signing key must match `31DDDE24DDFAB679F42D7BD2BAA929FF1A7ECACE`; unknown existing APT configuration is not overwritten. This does not change Beta installation or any published version-to-commit mapping.
 
 **Package installation is not Claude GUI acceptance.** From WebDesktop 1.4.0, registered GUI apps share the existing filtered public HTTP/HTTPS namespace; host/private/metadata access remains blocked. Earlier versions retain their fixed system-layer behavior. This installer does not weaken Electron's sandbox, grant KVM access, or automatically register a Claude launcher. Debian package installation and Claude login/keyring/resource tests remain NOT RUN locally. Component errors preserve the working desktop and `/var/lib/webdesktop-claude-bootstrap/status.json`; after root reviews the cause, retry only this component with `python3 -I /root/fa-build/scripts/claude_desktop.py`. Do not rerun the full fresh installer over an installed desktop.

@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import re
 import socket
+import stat
 import subprocess
 import sys
 import tempfile
@@ -86,7 +87,7 @@ def available_versions(catalogue,source):
     return dict(catalogue,versions=versions,default_version=default)
 
 
-def display_credentials(source):
+def display_credentials(source, domain_url=None):
     """Run cat after success, writing only to the operator's controlling terminal."""
     tools.require(os.geteuid()==0,'ROOT_REQUIRED')
     try:
@@ -100,7 +101,22 @@ def display_credentials(source):
         print('安装已成功；当前无法安全自动显示初始密码，请在本机 root 终端执行：cat /etc/webdesktop-isolated/login.json')
         return False
     with os.fdopen(fd,'w',encoding='utf-8') as terminal:
-        terminal.write('\n初始桌面和管理员登录信息：\n');terminal.flush()
+        if domain_url is not None:
+            tools.require(isinstance(domain_url,str) and re.fullmatch(r'https://[0-9a-f]{24}\.ourgoal\.win',domain_url),'DOMAIN_HOSTNAME')
+            # Show the user handoff only on the administrator's TTY, never in
+            # stdout, build output or persistent deployment diagnostics.
+            secret_fd=os.open(CREDENTIALS,os.O_RDONLY|os.O_NOFOLLOW|os.O_CLOEXEC)
+            with os.fdopen(secret_fd,'rb') as stream:
+                meta=os.fstat(stream.fileno());current=CREDENTIALS.lstat()
+                tools.require((meta.st_dev,meta.st_ino)==(current.st_dev,current.st_ino) and stat.S_ISREG(meta.st_mode)
+                              and meta.st_uid==0 and meta.st_nlink==1 and stat.S_IMODE(meta.st_mode)==0o600,'DOMAIN_INPUT_CHANGED')
+                raw=stream.read(16385)
+            tools.require(len(raw)<=16384,'DOMAIN_INPUT_SIZE')
+            password=json.loads(raw).get('DESKTOP_PASSWORD')
+            tools.require(isinstance(password,str) and 6<=len(password)<=128 and password.isascii() and password.isprintable(),'DOMAIN_CREDENTIAL_FORMAT')
+            terminal.write('\n交给用户的信息：\n桌面地址：'+domain_url+'\n桌面密码：'+password+'\n\n以下管理信息仅由管理员保留，请勿发给用户：\n')
+        else:terminal.write('\n初始桌面和管理员登录信息：\n')
+        terminal.flush()
         try:
             result=subprocess.run(['/usr/bin/cat','--',CREDENTIALS.as_posix()],stdin=subprocess.DEVNULL,stdout=terminal,
                                   stderr=subprocess.DEVNULL,env={'PATH':'/usr/bin:/bin','LANG':'C.UTF-8'},timeout=10,check=False)
@@ -148,6 +164,7 @@ def flow(a,catalogue,read=input):
     catalogue=available_versions(catalogue,source)
     m=select_version(catalogue,getattr(a,'version',None),read)
     if m is None:print('未选择版本；没有构建或安装。');return False
+    tools.require(not getattr(a,'domain_config',None) or m['engine']=='isolated','DOMAIN_BETA_NOT_SUPPORTED')
     tools.require(m['engine']!='legacy-beta' or a.mode=='local-test','BETA_REQUIRES_EXPLICIT_LEGACY_MODE')
     print('安装版本：'+m['version']+'；固定提交：'+m['commit'])
     source=private.PrivateSource(KEYS,SOURCES/m['commit'],REPO,m['branch'],m['commit'])
@@ -166,6 +183,7 @@ def flow(a,catalogue,read=input):
         coordinator.deploy(a,tools,private,source)
     else:
         coordinator=load('approved_private_deployment',repo/m['entrypoint'])
+        tools.require(not getattr(a,'domain_config',None) or getattr(coordinator,'DOMAIN_SUPPORT',0)==1,'DOMAIN_CAPABLE_RELEASE_REQUIRED')
         coordinator.deploy(a,tools)
         # Public dependency preparation runs only AFTER verified isolated install
         # success. Historical Beta installation and its source remain untouched.
@@ -174,9 +192,9 @@ def flow(a,catalogue,read=input):
         except Exception as error:
             tools.diag.report(error)
             print('WebDesktop 已安装成功；Claude Desktop 软件包安装未完成。不要重新安装桌面；修复原因后执行：python3 -I /root/fa-build/scripts/claude_desktop.py')
-            display_credentials(source)
+            display_credentials(source,getattr(a,'domain_url',None))
             raise
-        display_credentials(source)
+        display_credentials(source,getattr(a,'domain_url',None))
     return True
 
 def main(argv=None):
@@ -187,6 +205,7 @@ def main(argv=None):
     p.add_argument('--authorize-isolated-egress',action='store_true')
     p.add_argument('--formal-package',type=Path);p.add_argument('--formal-package-sha256')
     p.add_argument('--version',help='Exact version from the reviewed catalogue; omitted: ask interactively')
+    p.add_argument('--domain-config',type=Path,help='Root-only administrator-provisioned VPS Tunnel handoff (requires a domain-capable release)')
     p.add_argument('--admin',action='append',default=['root'])
     a=p.parse_args(argv);os.umask(0o077)
     private.require_platform();m=metadata()

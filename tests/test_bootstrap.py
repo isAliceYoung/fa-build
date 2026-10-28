@@ -14,6 +14,16 @@ spec=importlib.util.spec_from_file_location('public_ui',ROOT/'scripts/interactiv
 ui=importlib.util.module_from_spec(spec);spec.loader.exec_module(ui)
 
 class Interaction(unittest.TestCase):
+    def test_domain_diagnostics_preserve_claude_beta_and_version_errors(self):
+        diag=ui.tools.diag
+        for code,stage in [('CLAUDE_SIGNING_FINGERPRINT_MISMATCH','claude-package'),
+                           ('PUBLISHED_VERSION_TAG_MISMATCH','authorization'),('UNSAFE_BETA_CHECKOUT','authorization'),
+                           ('DOMAIN_AUTH_BOUNDARY_FAILED','domain-binding')]:
+            with self.subTest(code=code):
+                value=diag.fields(diag.safe(ValueError(code),stage=stage))
+                self.assertEqual(value['code'],code);self.assertEqual(value['stage'],stage)
+                self.assertTrue(value['reason'])
+
     def test_consent_only_y_or_Y(self):
         for value,expected in [('y',True),('Y',True),('n',False),('N',False),('',False),('yes',False),('invalid',False)]:
             with self.subTest(value=value),contextlib.redirect_stdout(io.StringIO()):self.assertEqual(ui.consent(lambda _:value),expected)
@@ -134,6 +144,35 @@ class Interaction(unittest.TestCase):
                 self.assertEqual((root/'unknown').read_text(),'preserve')
 
 class CredentialDisplay(unittest.TestCase):
+    def test_domain_user_handoff_is_only_written_to_administrator_tty(self):
+        class Terminal(io.StringIO):
+            def close(self):pass
+        terminal=Terminal();out=io.StringIO();err=io.StringIO();source=mock.Mock()
+        raw=b'{"DESKTOP_PASSWORD":"desktop-fixture-password"}'
+        meta=types.SimpleNamespace(st_dev=1,st_ino=2,st_mode=ui.stat.S_IFREG|0o600,st_uid=0,st_nlink=1)
+        class Secret(io.BytesIO):
+            def fileno(self):return 92
+        def fdopen(fd,*args,**kwargs):return terminal if fd==91 else Secret(raw)
+        def cat(*args,**kwargs):kwargs['stdout'].write('administrator-only-fixture');return types.SimpleNamespace(returncode=0)
+        with contextlib.ExitStack() as stack:
+            for name in ('O_NOCTTY','O_CLOEXEC','O_NOFOLLOW'):
+                stack.enter_context(mock.patch.object(ui.os,name,getattr(ui.os,name,0),create=True))
+            stack.enter_context(mock.patch.object(ui.os,'geteuid',return_value=0,create=True))
+            stack.enter_context(mock.patch.object(ui.os,'open',side_effect=[91,92]))
+            stack.enter_context(mock.patch.object(ui.os,'isatty',return_value=True))
+            stack.enter_context(mock.patch.object(ui.os,'fdopen',side_effect=fdopen))
+            stack.enter_context(mock.patch.object(ui.os,'fstat',return_value=meta))
+            stack.enter_context(mock.patch.object(Path,'lstat',return_value=meta))
+            stack.enter_context(mock.patch.object(ui.subprocess,'run',side_effect=cat))
+            logs=stack.enter_context(mock.patch.object(ui.tools.diag,'append'))
+            stack.enter_context(contextlib.redirect_stdout(out));stack.enter_context(contextlib.redirect_stderr(err))
+            self.assertTrue(ui.display_credentials(source,'https://'+'a'*24+'.ourgoal.win'))
+        visible=terminal.getvalue()
+        self.assertIn('交给用户的信息',visible);self.assertIn('desktop-fixture-password',visible)
+        self.assertLess(visible.index('desktop-fixture-password'),visible.index('以下管理信息仅由管理员保留'))
+        self.assertIn('administrator-only-fixture',visible)
+        self.assertNotIn('fixture',out.getvalue()+err.getvalue());logs.assert_not_called()
+
     def display(self,unsafe=False,no_terminal=False,child_failure=False,timeout=False,root=True):
         source=mock.Mock()
         if unsafe:source.check_node.side_effect=ui.private.Failure('PERMISSIONS','fixture protected file rejected')

@@ -111,7 +111,7 @@ class Versions(unittest.TestCase):
         for raw in ('','a'*40+'\trefs/tags/v99.0.0'):
             with self.assertRaisesRegex(ValueError,'NO_APPROVED_PUBLISHED_VERSIONS'):self.live_catalogue(raw)
 
-    def route(self,version='1.0.0',wrong_hash=False,mode='local-test',answer=True):
+    def route(self,version='1.0.0',wrong_hash=False,mode='local-test',answer=True,domain=False,capability=0):
         temp=tempfile.TemporaryDirectory(prefix='version-route-');self.addCleanup(temp.cleanup)
         root=Path(temp.name);key=root/'deploy_key';key.write_text('fixture marker')
         catalogue=ui.metadata()
@@ -145,6 +145,8 @@ class Versions(unittest.TestCase):
             return version if answer else ''
         args=types.SimpleNamespace(mode=mode,version=None,authorize_install=True,authorize_isolated_egress=True,ack_local_test_trust=True)
         coordinator=mock.Mock()
+        coordinator.DOMAIN_SUPPORT=capability
+        if domain:args.domain_config=Path('root-only-domain-fixture')
         def load(name,path):selected.append((name,Path(path)));return coordinator
         with mock.patch.object(ui,'KEYS',root/'keys'),mock.patch.object(ui,'SOURCES',root/'sources'), \
              mock.patch.object(ui.tools,'initial'),mock.patch.object(ui.tools.diag,'begin'), \
@@ -162,6 +164,15 @@ class Versions(unittest.TestCase):
         self.assertLess(events.index('authorized'),events.index('version-prompt'))
         self.assertLess(events.index('authorized'),events.index('live-tags'))
         self.assertLess(events.index('live-tags'),events.index('version-prompt'))
+
+    def test_domain_handoff_requires_explicit_new_private_capability(self):
+        with self.assertRaisesRegex(ValueError,'DOMAIN_CAPABLE_RELEASE_REQUIRED'):self.route(domain=True)
+        result,_,_,coordinator,args,_=self.route(domain=True,capability=1)
+        self.assertTrue(result);self.assertEqual(args.domain_config,Path('root-only-domain-fixture'))
+        coordinator.deploy.assert_called_once_with(args,ui.tools)
+
+    def test_beta_domain_handoff_is_rejected_without_changing_beta(self):
+        with self.assertRaisesRegex(ValueError,'DOMAIN_BETA_NOT_SUPPORTED'):self.route('beta0.1.0',domain=True,capability=1)
 
     def test_1_1_0_routes_to_reviewed_new_commit(self):
         result,events,selected,coordinator,args,_=self.route('1.1.0')

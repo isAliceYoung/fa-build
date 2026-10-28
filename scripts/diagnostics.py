@@ -15,7 +15,7 @@ import time
 ROOT=Path('/var/log/webdesktop-deploy')
 STAGES={'bootstrap','authorization','dependencies','building','packaging','delivery','fresh-preflight','tools','extracting','extracted',
         'source-ready','installing','native-preflight','native-extraction','ipv4-and-swap','packages','source-and-artifact','resource-policy',
-        'identities-and-layers','database-and-configuration','units-and-budget','start-service','ready','recovery','claude-package'}
+        'identities-and-layers','database-and-configuration','units-and-budget','start-service','ready','recovery','claude-package','domain-binding'}
 GROUPS={
     'accounts':{'HOST_ACCOUNT_AUDIT_FAILED','HOST_ACCOUNT_SSH_REVIEW_REQUIRED','HOST_ACCOUNT_SUDO_REVIEW_REQUIRED','HOST_ACCOUNT_ACTIVE_REVIEW_REQUIRED',
                 'HOST_ACCOUNT_HOME_REVIEW_REQUIRED','HOST_ACCOUNT_IDENTITY_REVIEW_REQUIRED','HOST_ACCOUNT_LOGIN_REVIEW_REQUIRED',
@@ -48,6 +48,28 @@ GROUPS={
 GROUPS['package'].update({'CLAUDE_SIGNING_FINGERPRINT_MISMATCH','CLAUDE_SIGNING_KEY_SIZE','CLAUDE_PACKAGE_NOT_INSTALLED'})
 GROUPS['resources'].add('CLAUDE_DISK_RESERVE_REQUIRED')
 GROUPS['state'].add('CLAUDE_EXISTING_APT_CONFIGURATION_REVIEW_REQUIRED')
+GROUPS['domain']={
+    'CF_ADMIN_TERMINAL_REQUIRED','CF_API_NETWORK','CF_API_REJECTED','CF_API_TOKEN_FORMAT',
+    'CF_DNS_COLLISION_LIMIT','CF_DNS_RECORD_CONFLICT','CF_DNS_RECORD_ID_CHANGED','CF_DNS_RECORD_MISSING',
+    'CF_DNS_RESPONSE','CF_REDIRECT_REFUSED','CF_REQUEST','CF_RESPONSE_JSON','CF_RESPONSE_SIZE',
+    'CF_TUNNEL_CONFIGURATION_DRIFT','CF_TUNNEL_CONFIGURATION_NOT_APPLIED','CF_TUNNEL_IDENTITY',
+    'CF_UNCERTAIN_TUNNEL_CREATE_REVIEW_REQUIRED','CF_ZONE_IDENTITY','DOMAIN_ACCOUNT_OR_ZONE_ID',
+    'DOMAIN_ADMIN_FAILED','DOMAIN_APT_KEY_MISMATCH','DOMAIN_AUTH_BOUNDARY_FAILED','DOMAIN_BACKEND_PID_MISMATCH',
+    'DOMAIN_BETA_NOT_SUPPORTED','DOMAIN_BIND_FAILED','DOMAIN_CAPABLE_RELEASE_REQUIRED',
+    'DOMAIN_CLOUDFLARED_VERSION','DOMAIN_COMMIT','DOMAIN_COMMIT_MISMATCH','DOMAIN_CONNECT_TIMEOUT',
+    'DOMAIN_CREDENTIAL_FORMAT','DOMAIN_DUPLICATE_FIELDS','DOMAIN_EXISTING_BINDING_CONFLICT',
+    'DOMAIN_EXISTING_HANDOFF_CHANGED','DOMAIN_EXISTING_SYSTEM_FILE_CONFLICT','DOMAIN_HANDOFF_FIELDS',
+    'DOMAIN_HOSTNAME','DOMAIN_HTTPS_HEALTH_FAILED','DOMAIN_INPUT_CHANGED','DOMAIN_INPUT_JSON',
+    'DOMAIN_INPUT_SIZE','DOMAIN_INSTALLED_CONTRACT_MISMATCH','DOMAIN_JOB_INPUTS_CHANGED','DOMAIN_JOB_STATE',
+    'DOMAIN_MACHINE_MISMATCH','DOMAIN_NATIVE_NETWORK_CHANGED','DOMAIN_NETWORK_UNAVAILABLE',
+    'DOMAIN_PARENT_REQUIRED','DOMAIN_PATH','DOMAIN_PATH_ACL','DOMAIN_PATH_LINK','DOMAIN_PATH_OWNER_MODE',
+    'DOMAIN_PATH_TYPE','DOMAIN_PREPARATION_INPUTS_CHANGED','DOMAIN_PRIVATE_MODE',
+    'DOMAIN_PUBLIC_LISTENER_REFUSED','DOMAIN_REDIRECT_REFUSED','DOMAIN_RESPONSE_SIZE',
+    'DOMAIN_ROOT_DEBIAN_REQUIRED','DOMAIN_STATE','DOMAIN_TOKEN_IDENTITY','DOMAIN_TOKEN_SECRET',
+    'DOMAIN_TOOL_OUTPUT_SIZE','DOMAIN_TUNNEL_ID','DOMAIN_TUNNEL_TOKEN','DOMAIN_UNKNOWN_INSTALLATION',
+    'DOMAIN_WINDOWS_PRIVATE_ACL_REQUIRED','UNSAFE_USER_DOMAIN_UNIT','USER_DOMAIN_BINDING_NOT_READY',
+    'USER_DOMAIN_CONFIGURATION_CHANGED','USER_DOMAIN_CONFIGURATION_INCOMPLETE','USER_DOMAIN_CONFIGURATION_SIZE',
+}
 CODES=set().union(*GROUPS.values())
 CATEGORIES=set(GROUPS)|{'services','database','network'}
 TOOLS={'bash','git','apt-get','systemctl','psql','pg_ctlcluster','sshd','ip','ss','nft','iptables-legacy-save','ip6tables-legacy-save','dpkg','dpkg-query','curl','gpg','python3','runuser','useradd','ssh-keygen','npm','node'}
@@ -58,13 +80,14 @@ PREFIX='WD_DEPLOY_ERROR '
 # traceback source text, frame locals or arbitrary module/exception attributes.
 PRIVATE_MODULES={'install_requirements.py','interactive_deploy.py','deployment_package.py','fresh_install.py','staging_install.py',
                  'isolated_deploy.py','private_repo.py','private_release.py','release_trust.py','staging_bundle.py','system_layers.py',
-                 'resource_policy.py','preparation_swap.py','deploy_diagnostics.py'}
+                 'resource_policy.py','preparation_swap.py','deploy_diagnostics.py','domain_contract.py','domain_install.py','cloudflare_domain.py'}
 PUBLIC_MODULES={'interactive.py','platform_tools.py','private_repo.py','status.py','diagnostics.py','beta_install.py','claude_desktop.py'}
 MODULES=PRIVATE_MODULES|{'public/'+name for name in PUBLIC_MODULES}
 
 # Every emitted reason is static and reviewed. stderr and exception messages
 # are used only to recognize an exact approved identifier, never as prose.
 REASONS={code:{
+    'domain':'The administrator-provisioned HTTPS binding failed validation; inspect the protected domain state before retrying.',
     'accounts':'Host account identity or permissions require manual review.',
     'authorization':'Source authorization or pinned identity validation failed.',
     'package':'Signed release or package verification failed.',
