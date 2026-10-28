@@ -21,10 +21,22 @@ Two startup choices are available: the convenience command trusts this official 
 `install.sh` contains the clean environment and explicit local-test installation flags; `bootstrap.sh` contains platform checks, basic dependency preparation and safe diagnostics. It remains root-only, Debian 12 amd64, for a new installation. The convenience command does not require manually editing a public commit:
 
 ```bash
-apt-get update && apt-get install -y git ca-certificates && git clone -c core.hooksPath=/dev/null -c core.fsmonitor=false https://github.com/isAliceYoung/fa-build.git /root/fa-build && bash /root/fa-build/install.sh
+(command -v git >/dev/null 2>&1 && test -s /etc/ssl/certs/ca-certificates.crt || (apt-get update && apt-get install -y git ca-certificates)) && (test ! -L /root/fa-build && test -d /root/fa-build/.git || git clone -c core.hooksPath=/dev/null -c core.fsmonitor=false https://github.com/isAliceYoung/fa-build.git /root/fa-build) && bash /root/fa-build/install.sh
 ```
 
-This executes the current official public `main`, not an independently pinned bootstrap. `/root/fa-build` must not already exist; no old checkout, installed system or failed journal is overwritten. To choose an independently reviewed bootstrap instead, use the following pinned template.
+On a first run this clones current official public `main`, not an independently pinned bootstrap. On later runs it reuses the existing checkout without pulling, resetting, deleting, or cloning over it. Git/CA preparation is skipped when the tools already exist. The current bootstrap validates root ownership, safe path types/modes, official origin, tracked-file identity and a clean checkout; unknown/modified directories stop for review. Existing older checkouts are not automatically upgraded by this command. To use an independently reviewed bootstrap, use the pinned template below.
+
+### Reconnect while waiting for GitHub authorization
+
+If the clone completed and the SSH connection ended at the y/N prompt, do not clone again. From the existing reviewed checkout run:
+
+```bash
+bash /root/fa-build/install.sh
+```
+
+The current bootstrap reuses a locally validated key. Live authorization success skips the prompt; access denial shows the same public key and allows manual authorization again, then rechecks real read access. Broken/mismatched keys, host-key failures and network/branch errors stop without replacement or repair. y is not proof of authorization. Older bootstrap versions may require adding the existing key in GitHub before re-entry; its public half is `/root/.ssh/webdesktop-build-fa/deploy_key.pub`. Never delete or regenerate the key merely to get another prompt.
+
+Completed root-protected native/bootstrap/fresh installation records are recognized and the command exits with `ALREADY_INSTALLED`, without reinstalling, upgrading, changing credentials or claiming a new health-check pass. Partial/failed records still refuse automatic replay. Preparation stages retain their original bounded reuse policy; an interrupted build or native installation is not blindly restarted. Check `bootstrap.sh status` before any separately reviewed recovery.
 
 This is a **template**. Replace `APPROVED_PUBLIC_SHA` with the independently approved full public commit. `/root/fa-build` must not exist; the command never overwrites an existing directory.
 

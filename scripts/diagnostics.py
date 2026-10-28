@@ -33,6 +33,7 @@ GROUPS={
     'resources':{'INSTALL_DISK_RESERVE','INSUFFICIENT_FREE_DISK','INSUFFICIENT_AVAILABLE_SWAP','INSUFFICIENT_RAM_CPU','DISK_RESERVE',
                  'INSUFFICIENT_PREPARATION_DISK','LOCAL_BUILD_REQUIRES_2CPU_2G_RAM','MINIMUM_1G_SWAP_REQUIRED','DISK_SPACE','SOURCE_LIMIT','BUILD_HARDLINK_DISK_RESERVE'},
     'state':{'EXISTING_INSTALLATION','EXISTING_DEPLOYMENT_REFUSED','EXISTING_OR_INTERRUPTED_INSTALL','UNVERIFIED_EARLY_INSTALL_RECOVERY_REQUIRED',
+             'BOOTSTRAP_CHECKOUT_REVIEW_REQUIRED',
              'RESUME_INPUTS_DIFFER','UNKNOWN_OR_DIFFERENT_PREPARATION_STATE','EXISTING_SOURCE_REQUIRES_REVIEW','INSTALL_TASK_BUSY',
              'LOCKED','STALE_KEY_STAGE','STALE_STAGE','EXISTING_SOURCE'},
     'filesystem':{'PROTECTED_FILE_REQUIRED','ROOT_PATH_REVIEW_REQUIRED','UNSAFE_INSTALL_LOCK','UNSAFE_BOOTSTRAP_LOCK','UNSAFE_FRESH_CACHE','DIAGNOSTIC_WRITE_FAILED',
@@ -100,6 +101,7 @@ REASONS={code:{
     'python':'An unreviewed exception occurred; its message is hidden. Inspect the reported source line.',
 }[category] for category,codes in GROUPS.items() for code in codes}
 REASONS.update({
+    'BOOTSTRAP_CHECKOUT_REVIEW_REQUIRED':'The existing bootstrap checkout must be an unmodified root-owned Git checkout of the official repository; no pull, reset or replacement was performed.',
     'CLAUDE_SIGNING_FINGERPRINT_MISMATCH':'The official Claude APT key does not match the independently pinned fingerprint; no package is installed.',
     'CLAUDE_SIGNING_KEY_SIZE':'The downloaded Claude signing key is empty or exceeds its fixed size limit.',
     'CLAUDE_PACKAGE_NOT_INSTALLED':'APT returned but dpkg does not confirm Claude Desktop as installed.',

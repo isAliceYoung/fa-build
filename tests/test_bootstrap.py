@@ -3,7 +3,12 @@ import contextlib
 import hashlib
 import importlib.util
 import io
+import json
+import os
 from pathlib import Path
+import shutil
+import stat
+import subprocess
 import tempfile
 import types
 import unittest
@@ -43,6 +48,7 @@ class Interaction(unittest.TestCase):
             def locked(self):yield
             def verify_local(self):
                 if broken:raise ui.private.Failure('KEY_PAIR','unsafe fixture keypair')
+            def validate_identity(self):return 'ssh-ed25519 TEST_PUBLIC_FIXTURE_ONLY fixture'
             def authorized(self):
                 if error:raise ui.private.Failure(error,'simulated denial')
                 return 'b'*40
@@ -61,11 +67,11 @@ class Interaction(unittest.TestCase):
             self.display=display
             def read(_):
                 if '版本' in _:return '1.0.0'
-                if existing:raise AssertionError('Valid existing identity must not prompt again')
+                if existing and error!='AUTHORIZATION':raise AssertionError('Valid existing identity must not prompt again')
                 return answer
             self.output=io.StringIO()
             with contextlib.redirect_stdout(self.output):result=ui.flow(a,m,read)
-            if existing:self.assertNotIn('Public key:',self.output.getvalue())
+            if existing and error!='AUTHORIZATION':self.assertNotIn('Public key:',self.output.getvalue())
         return result,coordinator
 
     def test_n_never_enters_private_deployment(self):
@@ -89,10 +95,46 @@ class Interaction(unittest.TestCase):
     def test_existing_valid_key_live_authorized_without_prompt(self):
         value,coordinator=self.fixture('',existing=True);self.assertTrue(value);coordinator.deploy.assert_called_once()
 
-    def test_existing_invalid_or_revoked_identity_never_prompts_or_rekeys(self):
-        for error in ('AUTHORIZATION','HOST_KEY','NETWORK','BRANCH','COMMIT'):
+    def test_existing_invalid_identity_and_network_errors_never_prompt_or_rekey(self):
+        for error in ('HOST_KEY','NETWORK','BRANCH','COMMIT'):
             with self.subTest(error=error),self.assertRaises(ui.private.Failure):self.fixture('',error=error,existing=True)
         with self.assertRaisesRegex(ui.private.Failure,'unsafe fixture'):self.fixture('',existing=True,broken=True)
+
+    def test_existing_unauthorized_key_still_denied_after_y(self):
+        with self.assertRaises(ui.private.Failure):self.fixture('y',error='AUTHORIZATION',existing=True)
+
+    def test_existing_unauthorized_key_n_or_empty_never_installs(self):
+        for answer in ('n',''):
+            value,coordinator=self.fixture(answer,error='AUTHORIZATION',existing=True)
+            self.assertFalse(value);coordinator.deploy.assert_not_called()
+
+    def test_interrupted_key_authorization_reuses_the_same_key_after_y(self):
+        with tempfile.TemporaryDirectory() as directory:
+            key=Path(directory)/'deploy_key';key.write_bytes(b'nonsecret simulated identity')
+            class Source:
+                attempts=0
+                def locked(self):return contextlib.nullcontext()
+                def verify_local(self):pass
+                def validate_identity(self):return 'ssh-ed25519 TEST_PUBLIC_FIXTURE_ONLY existing'
+                def prepare(self):raise AssertionError('Do not regenerate the key')
+                def authorized(self):
+                    self.attempts+=1
+                    if self.attempts==1:raise ui.private.Failure('AUTHORIZATION','simulated first denial')
+            source=Source();source.key=key
+            output=io.StringIO()
+            with contextlib.redirect_stdout(output):self.assertTrue(ui.authorize_source(source,lambda _:'y'))
+            self.assertEqual(source.attempts,2);self.assertEqual(key.read_bytes(),b'nonsecret simulated identity')
+            self.assertIn('existing key retained',output.getvalue());self.assertIn('TEST_PUBLIC_FIXTURE_ONLY existing',output.getvalue())
+
+    def test_key_identity_cannot_change_while_waiting_for_consent(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source=mock.Mock();source.key=Path(directory)/'deploy_key';source.key.write_bytes(b'fixture')
+            source.locked.side_effect=lambda:contextlib.nullcontext()
+            source.authorized.side_effect=ui.private.Failure('AUTHORIZATION','simulated denial')
+            source.validate_identity.side_effect=['ssh-ed25519 ORIGINAL fixture','ssh-ed25519 CHANGED fixture']
+            with contextlib.redirect_stdout(io.StringIO()),self.assertRaisesRegex(ValueError,'KEY_PAIR'):
+                ui.authorize_source(source,lambda _:'y')
+            source.authorized.assert_called_once();source.prepare.assert_not_called()
 
     def test_local_test_cannot_be_silently_enabled(self):
         with mock.patch.object(ui.private,'require_platform'),mock.patch.object(ui,'metadata',return_value={}):
@@ -228,6 +270,83 @@ class CredentialDisplay(unittest.TestCase):
 
     def test_nonroot_cannot_display_initial_credentials(self):
         with self.assertRaisesRegex(ValueError,'ROOT_REQUIRED'):self.display(root=False)
+
+
+class CheckoutReuse(unittest.TestCase):
+    def fixture(self,issue=None):
+        temp=tempfile.TemporaryDirectory(prefix='bootstrap-reentry-');self.addCleanup(temp.cleanup)
+        root=Path(temp.name)/'checkout';root.mkdir()
+        def git(*args):
+            return subprocess.check_output(['git','-c','core.hooksPath=/dev/null','-c','core.fsmonitor=false','-C',str(root),*args],stderr=subprocess.STDOUT).decode().strip()
+        git('init','-q');git('config','core.autocrlf','false');git('config','user.name','local-fixture');git('config','user.email','fixture@example.invalid')
+        for name in ('install.sh','bootstrap.sh','scripts/interactive.py','release.json'):
+            p=root/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text('nonsecret test data\n')
+        git('add','.');git('commit','-qm','local fixture');git('remote','add','origin','https://github.com/isAliceYoung/fa-build.git')
+        if issue=='origin':git('remote','set-url','origin','https://github.com/example/other.git')
+        if issue=='dirty':(root/'install.sh').write_text('modified')
+        if issue=='untracked':(root/'untracked.txt').write_text('keep')
+        before={p.relative_to(root).as_posix():p.read_bytes() for p in root.rglob('*') if p.is_file() and '.git' not in p.relative_to(root).parts}
+        calls=[]
+        def runner(argv,**kwargs):
+            calls.append(list(map(str,argv)))
+            self.assertFalse(any(x in argv for x in ('fetch','pull','clone','checkout','reset')))
+            return subprocess.run([shutil.which('git'),*argv[1:]],**kwargs)
+        checker=ui.private.PrivateSource(Path(temp.name)/'keys',Path(temp.name)/'private','git@github.com:isAliceYoung/fa.git','feature/CC','a'*40,runner=runner)
+        original=Path.lstat
+        def metadata(path,*args,**kwargs):
+            value=original(path,*args,**kwargs);kind=stat.S_IFMT(value.st_mode)
+            mode=0o755 if stat.S_ISDIR(value.st_mode) else 0o644;uid=0;links=value.st_nlink
+            if path==root/'install.sh':
+                if issue=='owner':uid=1001
+                if issue=='mode':mode=0o664
+                if issue=='symlink':kind=stat.S_IFLNK
+                if issue=='hardlink':links=2
+            return types.SimpleNamespace(st_mode=kind|mode,st_uid=uid,st_nlink=links)
+        with mock.patch.object(ui.private,'PrivateSource',return_value=checker),mock.patch.object(Path,'lstat',metadata):
+            if issue:
+                with self.assertRaises((ValueError,ui.private.Failure)):ui.verify_checkout(root)
+            else:
+                for _ in range(2):self.assertEqual(ui.verify_checkout(root),git('rev-parse','HEAD'))
+        after={p.relative_to(root).as_posix():p.read_bytes() for p in root.rglob('*') if p.is_file() and '.git' not in p.relative_to(root).parts}
+        self.assertEqual(before,after);return calls
+
+    def test_real_git_checkout_can_be_reused_without_fetch_or_modification(self):
+        self.assertTrue(self.fixture())
+
+    def test_unknown_modified_or_unsafe_checkout_preserved_and_refused(self):
+        for issue in ('origin','dirty','untracked','owner','mode','symlink','hardlink'):
+            with self.subTest(issue=issue):self.fixture(issue)
+
+    def installed(self,phase='ready',native_commit='b'*40,bootstrap_commit='a'*40,fresh_commit='a'*40):
+        temp=tempfile.TemporaryDirectory(prefix='install-skip-');self.addCleanup(temp.cleanup)
+        paths=tuple(Path(temp.name)/(n+'.json') for n in ('native','bootstrap','fresh'))
+        values=[dict(schema=1,status=phase,phase=phase,deployment_kind='isolated',authorized_new_vps=True,branch='feature/CC',commit=native_commit),
+                dict(schema=1,phase=phase,commit=bootstrap_commit),dict(schema=1,phase=phase,result=phase,inputs=dict(commit=fresh_commit))]
+        for path,value in zip(paths,values):path.write_text(json.dumps(value))
+        before=[p.read_bytes() for p in paths]
+        original=Path.lstat
+        def meta(path,*args,**kwargs):
+            value=original(path,*args,**kwargs)
+            return types.SimpleNamespace(st_mode=stat.S_IFMT(value.st_mode)|(0o755 if stat.S_ISDIR(value.st_mode) else 0o600),st_uid=0,st_nlink=1,st_size=value.st_size)
+        with mock.patch.object(ui,'INSTALL_RECORDS',paths),mock.patch.object(Path,'lstat',meta),contextlib.redirect_stdout(io.StringIO()) as out:
+            result=ui.reuse_installation()
+        self.assertEqual([p.read_bytes() for p in paths],before)
+        return result,out.getvalue()
+
+    def test_completed_installation_is_skipped_without_health_success_claim(self):
+        result,out=self.installed();self.assertTrue(result);self.assertIn('ALREADY_INSTALLED',out);self.assertNotIn('PASS',out)
+
+    def test_interrupted_or_failed_installation_cannot_be_skipped_as_success(self):
+        for phase in ('installing','building','failed'):
+            with self.subTest(phase=phase):self.assertFalse(self.installed(phase)[0])
+
+    def test_inconsistent_completed_records_are_rejected(self):
+        with self.assertRaises(ValueError):self.installed(fresh_commit='c'*40)
+
+    def test_main_skips_completed_installation_before_apt_authorization_or_deploy(self):
+        with mock.patch.object(ui.private,'require_platform'),mock.patch.object(ui,'verify_checkout',return_value='a'*40),mock.patch.object(ui,'metadata',return_value={}),mock.patch.object(ui,'reuse_installation',return_value=True),mock.patch.object(ui,'flow') as flow,mock.patch.object(ui.tools,'initial') as initial,contextlib.redirect_stdout(io.StringIO()):
+            ui.main(['--mode','local-test','--ack-local-test-trust','--authorize-install','--authorize-isolated-egress'])
+        flow.assert_not_called();initial.assert_not_called()
 
 
 if __name__=='__main__':unittest.main(verbosity=2)

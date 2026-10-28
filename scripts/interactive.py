@@ -22,6 +22,84 @@ REPO='git@github.com:isAliceYoung/fa.git'
 KEYS=Path('/root/.ssh/webdesktop-build-fa')
 SOURCES=Path('/opt/webdesktop-private-build/sources')
 CREDENTIALS=Path('/etc/webdesktop-isolated/login.json')
+INSTALL_RECORDS=(Path('/etc/webdesktop-isolated/state.json'),Path('/var/lib/webdesktop-bootstrap/state.json'),Path('/var/lib/webdesktop-fresh/state.json'))
+
+def reuse_installation():
+    """Only skip completed records; never install, upgrade, repair or claim health."""
+    if not all(os.path.lexists(p) for p in INSTALL_RECORDS):return False
+    checker=private.PrivateSource(KEYS,SOURCES/('0'*40),REPO,'feature/CC','0'*40)
+    records=[]
+    for path in INSTALL_RECORDS:
+        checker.directory(path.parent,private=False);checker.check_node(path,private=True)
+        meta=path.lstat()
+        tools.require(stat.S_IMODE(meta.st_mode)==0o600 and meta.st_size<=2*1024**2,'EXISTING_INSTALLATION')
+        value=json.loads(path.read_text(encoding='utf-8'))
+        tools.require(isinstance(value,dict),'EXISTING_INSTALLATION');records.append(value)
+    native,bootstrap,fresh=records
+    if not (native.get('status')==native.get('phase')=='ready' and bootstrap.get('phase')=='ready' and fresh.get('phase')==fresh.get('result')=='ready'):
+        return False  # Existing initial() refusal preserves partial/failed states.
+    tools.require(native.get('schema')==bootstrap.get('schema')==fresh.get('schema')==1
+                  and native.get('deployment_kind')=='isolated' and native.get('authorized_new_vps') is True
+                  and native.get('branch')=='feature/CC' and re.fullmatch('[a-f0-9]{40}',native.get('commit',''))
+                  and re.fullmatch('[a-f0-9]{40}',bootstrap.get('commit',''))
+                  and isinstance(fresh.get('inputs'),dict) and fresh['inputs'].get('commit')==bootstrap['commit'],
+                  'EXISTING_INSTALLATION')
+    print('ALREADY_INSTALLED: '+native['commit'])
+    print('已存在已完成的安装记录，本次跳过首次安装。没有重装、升级或修改用户数据；服务状态请使用 bootstrap.sh status 检查。')
+    return True
+
+def verify_checkout(root=ROOT):
+    """Reuse an administrator-owned clean checkout; never pull/reset or repair it.
+
+    This local re-entry guard is not independent bootstrap provenance. The caller
+    must still approve the public checkout before executing its scripts.
+    """
+    root=Path(root).absolute()
+    checker=private.PrivateSource(KEYS,SOURCES/('0'*40),REPO,'feature/CC','0'*40)
+    checker.directory(root,private=False)
+    checker.check_node(root/'.git',directory=True)
+    for name in ('config','HEAD','index'):
+        checker.check_node(root/'.git'/name)
+    g=lambda *args:checker.git('-C',root,*args)
+    tools.require(Path(g('rev-parse','--show-toplevel')).absolute()==root,'BOOTSTRAP_CHECKOUT_REVIEW_REQUIRED')
+    tools.require(private.repository(g('remote','get-url','origin'))=='git@github.com:isAliceYoung/fa-build.git','BOOTSTRAP_CHECKOUT_REVIEW_REQUIRED')
+    commit=g('rev-parse','HEAD')
+    tools.require(bool(re.fullmatch('[a-f0-9]{40}',commit)) and not g('status','--porcelain','--untracked-files=all'),'BOOTSTRAP_CHECKOUT_REVIEW_REQUIRED')
+    names=[name for name in g('ls-files','-z').split('\0') if name]
+    tools.require(0<len(names)<=64 and {'install.sh','bootstrap.sh','scripts/interactive.py','release.json'}<=set(names),'BOOTSTRAP_CHECKOUT_REVIEW_REQUIRED')
+    for name in names:
+        relative=Path(name)
+        tools.require(not relative.is_absolute() and '..' not in relative.parts,'BOOTSTRAP_CHECKOUT_REVIEW_REQUIRED')
+        checker.directory((root/relative).parent,private=False)
+        checker.check_node(root/relative)
+    return commit
+
+
+def authorize_source(source,read=input):
+    """Reuse a validated key; re-enter manual authorization only on access denial."""
+    existing=os.path.lexists(source.key) or os.path.lexists(source.key.with_suffix('.pub'))
+    if existing:
+        with source.locked():
+            source.verify_local()
+            try:source.authorized()
+            except private.Failure as error:
+                if error.code!='AUTHORIZATION':raise
+                public=source.validate_identity()
+            else:
+                print('[2/9] GitHub Deploy Key ... REUSED (local identity and live authorization verified)')
+                return True
+        print('[2/9] GitHub Deploy Key ... WAITING FOR AUTHORIZATION (existing key retained)\n\nPublic key:\n'+public)
+    else:
+        public=source.prepare()
+        print('[2/9] GitHub Deploy Key ... READY\n\nPublic key:\n'+public)
+    print('\nhttps://github.com/isAliceYoung/fa/settings/keys\n请添加到 Deploy keys，并保持 Allow write access 未勾选。')
+    if not consent(read):print('未授权；没有构建或安装。');return False
+    with source.locked():
+        source.verify_local()
+        tools.require(source.validate_identity()==public,'KEY_PAIR')
+        source.authorized()
+    return True
+
 
 def consent(read=input):
     try:value=read('是否已完成 GitHub 授权？[y/N]:').strip()
@@ -151,16 +229,7 @@ def flow(a,catalogue,read=input):
     default=catalogue['versions'][catalogue['default_version']]
     source=private.PrivateSource(KEYS,SOURCES/default['commit'],REPO,default['branch'],default['commit'])
     tools.diag.begin('authorization')
-    if os.path.lexists(source.key) or os.path.lexists(source.key.with_suffix('.pub')):
-        # Do not call prepare(): missing/mismatched/unsafe pairs must never be
-        # silently regenerated or repaired in this reuse path.
-        with source.locked():source.verify_local();source.authorized()
-        print('[2/9] GitHub Deploy Key ... REUSED (local identity and live authorization verified)')
-    else:
-        print('[2/9] GitHub Deploy Key ... READY\n\nPublic key:\n'+source.prepare())
-        print('\nhttps://github.com/isAliceYoung/fa/settings/keys\n请添加到 Deploy keys，并保持 Allow write access 未勾选。')
-        if not consent(read):print('未授权；没有构建或安装。');return False
-        with source.locked():source.verify_local();source.authorized()
+    if not authorize_source(source,read):return False
     catalogue=available_versions(catalogue,source)
     m=select_version(catalogue,getattr(a,'version',None),read)
     if m is None:print('未选择版本；没有构建或安装。');return False
@@ -208,11 +277,15 @@ def main(argv=None):
     p.add_argument('--domain-config',type=Path,help='Root-only administrator-provisioned VPS Tunnel handoff (requires a domain-capable release)')
     p.add_argument('--admin',action='append',default=['root'])
     a=p.parse_args(argv);os.umask(0o077)
-    private.require_platform();m=metadata()
+    private.require_platform()
     if a.mode=='local-test':tools.require(a.ack_local_test_trust,'EXPLICIT_LOCAL_TEST_TRUST_ACK_REQUIRED')
     if a.action=='status':
+        verify_checkout()
         print(tools.run(['/usr/bin/python3','-I',ROOT/'scripts/status.py']));return
     tools.require(a.authorize_install and a.authorize_isolated_egress,'EXPLICIT_INSTALL_AND_EGRESS_FLAGS_REQUIRED')
+    commit=verify_checkout();m=metadata()
+    print('Verified local bootstrap checkout: '+commit+' (no pull, reset or re-clone)')
+    if reuse_installation():return
     print('Trust mode: '+('LOCAL_TEST_TRUST (NOT independent release trust)' if a.mode=='local-test' else 'FORMAL (independent signed package required)'))
     print('Bootstrap checkout: '+str(ROOT))
     flow(a,m)
