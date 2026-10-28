@@ -51,6 +51,7 @@ GROUPS['resources'].add('CLAUDE_DISK_RESERVE_REQUIRED')
 GROUPS['state'].add('CLAUDE_EXISTING_APT_CONFIGURATION_REVIEW_REQUIRED')
 GROUPS['domain']={
     'CF_ADMIN_TERMINAL_REQUIRED','CF_API_NETWORK','CF_API_REJECTED','CF_API_TOKEN_FORMAT',
+    'CF_API_HTTP_401','CF_API_HTTP_403','DOMAIN_AUTOMATION_METADATA_INVALID',
     'CF_DNS_COLLISION_LIMIT','CF_DNS_RECORD_CONFLICT','CF_DNS_RECORD_ID_CHANGED','CF_DNS_RECORD_MISSING',
     'CF_DNS_RESPONSE','CF_REDIRECT_REFUSED','CF_REQUEST','CF_RESPONSE_JSON','CF_RESPONSE_SIZE',
     'CF_TUNNEL_CONFIGURATION_DRIFT','CF_TUNNEL_CONFIGURATION_NOT_APPLIED','CF_TUNNEL_IDENTITY',
@@ -87,8 +88,8 @@ PREFIX='WD_DEPLOY_ERROR '
 # traceback source text, frame locals or arbitrary module/exception attributes.
 PRIVATE_MODULES={'install_requirements.py','interactive_deploy.py','deployment_package.py','fresh_install.py','staging_install.py',
                  'isolated_deploy.py','private_repo.py','private_release.py','release_trust.py','staging_bundle.py','system_layers.py',
-                 'resource_policy.py','preparation_swap.py','deploy_diagnostics.py','domain_contract.py','domain_install.py','domain_attach.py','cloudflare_domain.py'}
-PUBLIC_MODULES={'interactive.py','platform_tools.py','private_repo.py','status.py','diagnostics.py','beta_install.py','claude_desktop.py'}
+                 'resource_policy.py','preparation_swap.py','deploy_diagnostics.py','domain_contract.py','domain_install.py','domain_attach.py','domain_interactive.py','cloudflare_domain.py'}
+PUBLIC_MODULES={'interactive.py','platform_tools.py','private_repo.py','status.py','diagnostics.py','beta_install.py','claude_desktop.py','domain_setup.py'}
 MODULES=PRIVATE_MODULES|{'public/'+name for name in PUBLIC_MODULES}
 
 # Every emitted reason is static and reviewed. stderr and exception messages
@@ -107,6 +108,9 @@ REASONS={code:{
     'python':'An unreviewed exception occurred; its message is hidden. Inspect the reported source line.',
 }[category] for category,codes in GROUPS.items() for code in codes}
 REASONS.update({
+    'CF_API_HTTP_401':'Cloudflare API authentication failed. Re-enter a valid administrator token; it was not saved.',
+    'CF_API_HTTP_403':'Cloudflare API denied this operation. Check the token permissions and specified account and zone.',
+    'DOMAIN_AUTOMATION_METADATA_INVALID':'The reviewed domain maintenance metadata is invalid. No domain code was acquired or executed.',
     'DOMAIN_APT_KEY_HTTP_FORBIDDEN':'Cloudflare package signing-key download returned HTTP 403. No APT key or repository was written.',
     'DOMAIN_APT_KEY_DOWNLOAD_FAILED':'Cloudflare package signing-key download returned an unsuccessful HTTP response. No APT key or repository was written.',
     'DOMAIN_APT_KEY_MISMATCH':'Downloaded Cloudflare package signing-key bytes do not match the pinned SHA256. No APT key or repository was written.',

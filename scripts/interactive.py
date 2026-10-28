@@ -221,6 +221,12 @@ def acquire(source):
     result=source.clone();tools.require(not result['dirty'],'EXISTING_SOURCE_MODIFIED')
     return source.source
 
+
+def post_install_domain(a,read=input):
+    if getattr(a,'domain_url',None):return a.domain_url
+    component=load('public_domain_setup',HERE/'domain_setup.py')
+    return component.offer(tools,private,acquire,read=read,expected_commit=getattr(a,'commit',None))
+
 def flow(a,catalogue,read=input):
     if getattr(a,'version',None) is not None:
         tools.require(a.version in catalogue['versions'],'UNKNOWN_INSTALL_VERSION')
@@ -263,12 +269,17 @@ def flow(a,catalogue,read=input):
             print('WebDesktop 已安装成功；Claude Desktop 软件包安装未完成。不要重新安装桌面；修复原因后执行：python3 -I /root/fa-build/scripts/claude_desktop.py')
             display_credentials(source,getattr(a,'domain_url',None))
             raise
-        display_credentials(source,getattr(a,'domain_url',None))
+        domain_url=getattr(a,'domain_url',None)
+        try:domain_url=post_install_domain(a,read)
+        except Exception:
+            print('WebDesktop 和 Claude Desktop 安装已完成；域名绑定未完成。保留现场，稍后运行：bash /root/fa-build/install.sh domain')
+            raise
+        finally:display_credentials(source,domain_url)
     return True
 
 def main(argv=None):
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument('action',choices=('run','status','resume'),nargs='?',default='run')
+    p.add_argument('action',choices=('run','status','resume','domain'),nargs='?',default='run')
     p.add_argument('--mode',choices=('formal','local-test'),default='formal')
     p.add_argument('--ack-local-test-trust',action='store_true');p.add_argument('--authorize-install',action='store_true')
     p.add_argument('--authorize-isolated-egress',action='store_true')
@@ -285,6 +296,13 @@ def main(argv=None):
     tools.require(a.authorize_install and a.authorize_isolated_egress,'EXPLICIT_INSTALL_AND_EGRESS_FLAGS_REQUIRED')
     commit=verify_checkout();m=metadata()
     print('Verified local bootstrap checkout: '+commit+' (no pull, reset or re-clone)')
+    if a.action=='domain':
+        tools.require(reuse_installation(),'EXISTING_INSTALLATION')
+        domain_url=post_install_domain(a)
+        if domain_url:
+            checker=private.PrivateSource(KEYS,SOURCES/('0'*40),REPO,'feature/CC','0'*40)
+            display_credentials(checker,domain_url)
+        return
     if reuse_installation():return
     print('Trust mode: '+('LOCAL_TEST_TRUST (NOT independent release trust)' if a.mode=='local-test' else 'FORMAL (independent signed package required)'))
     print('Bootstrap checkout: '+str(ROOT))

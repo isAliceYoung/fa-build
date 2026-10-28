@@ -85,7 +85,7 @@ def _install(tools, private):
         record('installed')
         shutil.rmtree(work)  # Only the successfully verified scratch of this attempt.
         print('Claude Desktop package ... INSTALLED (official signed APT source).')
-        print('Claude GUI: EXPERIMENTAL_NOT_VALIDATED; current offline GUI worker cannot sign in. No sandbox, network or KVM restrictions changed.')
+        print('Claude GUI: EXPERIMENTAL_NOT_VALIDATED; package installation does not confirm GUI startup or sign-in.')
     except Exception:
         record('failed'); raise
 

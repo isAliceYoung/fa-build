@@ -1,12 +1,24 @@
 # WebDesktop Public Bootstrap
 
-## Administrator-managed HTTPS domains (development support)
+## Optional automatic HTTPS domain binding
 
-The bootstrap accepts `--domain-config /root/webdesktop-domain.json` for a future reviewed domain-capable private release. This is an administrator-provisioned per-VPS handoff, not user enrollment. The Cloudflare account/zone API token stays on the administrator's control machine; only the individual Tunnel credential reaches its VPS. A capable coordinator installs on loopback and binds the explicitly approved HTTPS hostname; successful terminal output separates the user's URL/password from administrator-only credentials. Passwords never go to ordinary stdout or diagnostic logs.
+After WebDesktop **1.5.0** and the Claude Desktop package are installed successfully, the root terminal asks `是否绑定域名？[y/N]：`. Choose y to enter Cloudflare Account ID, Zone ID for `ourgoal.win`, and the account API Token using hidden terminal input. The machine ID is read automatically. The private provisioner creates a separate Tunnel and random 24-hex subdomain for this VPS, binds it to `http://127.0.0.1:3000`, and verifies connector readiness, HTTPS health and unauthenticated API refusal before reporting success. Choosing n/Enter/EOF skips binding.
 
-**WebDesktop 1.5.0 supports this capability.** Prepare the administrator handoff against its exact approved private commit, then pass `--domain-config /root/webdesktop-domain.json` and select `1.5.0`. Existing 1.4.0/older mappings and Beta remain fixed; these refuse the domain option. No existing VPS migration is performed. The account-side provisioner and application code remain private; real Cloudflare and VPS acceptance is NOT RUN.
+The administrator explicitly authorizes temporary API Token use on the VPS. The token stays in process memory: no argv, environment, file or diagnostic-log token interface; no subprocess receives it. Core dumps are disabled and token references are dropped before package/service setup. Persistent root-only files contain only the dedicated per-VPS Tunnel credential, binding/provisioning state and IDs. The running connector never receives the account API Token. Do not put the token into a command, chat or repository.
 
-Private implementation checkpoint: `032ada4e233e91b93591e54928a30a010ba62c8a` on `feature/CC` (development, not a new installable version). This checkpoint must not be substituted into an old release entry.
+Use an API Token scoped to **Cloudflare Tunnel: Edit** for the intended account and **DNS: Edit** only for `ourgoal.win`. The same account and existing zone reuse their Account ID and Zone ID across new VPS deployments; recheck after changing accounts or recreating/moving a zone. See [Cloudflare's ID guide](https://developers.cloudflare.com/fundamentals/account/find-account-and-zone-ids/).
+
+Automatic binding currently supports only the fixed 1.5.0 application commit. Older versions and Beta are unchanged and skip this feature. `domain-maintenance.json` separately pins the private maintenance commit and all six helper hashes; the installer uses the existing isolated Deploy Key and verified GitHub host to obtain that exact code. Published application tags and `release.json` mappings are unchanged. This avoids substituting maintenance code for the signed installed application.
+
+After skipping or a reviewed recoverable binding failure, run the dedicated action from this **updated, reviewed** checkout:
+
+```bash
+bash /root/fa-build/install.sh domain
+```
+
+It requires an already complete protected installation; it does not replay fresh installation, npm builds or Claude installation. Existing matching binding data is verified and reused without another API Token. Unknown/partial application state, conflicting configuration or an uncertain Tunnel-create request stops for administrator review; no database, password, user data or DNS belonging to others is deleted. Binding can briefly restart the desktop backend, so save pending work before choosing y.
+
+The earlier Windows administrator workflow and `--domain-config /root/webdesktop-domain.json` remain supported; that mode keeps the account API Token on Windows and passes only the per-Tunnel handoff. An already supplied domain handoff does not trigger another binding prompt. New integrated Cloudflare provisioning, Debian service and GUI acceptance remain **NOT RUN**; local tests use simulated services/API calls.
 
 The isolated installation entrypoint now also installs the official Claude Desktop Linux package and GNOME Keyring after WebDesktop passes its health check. Anthropic's APT signing key must match `31DDDE24DDFAB679F42D7BD2BAA929FF1A7ECACE`; unknown existing APT configuration is not overwritten. This does not change Beta installation or any published version-to-commit mapping.
 
@@ -41,7 +53,7 @@ Completed root-protected native/bootstrap/fresh installation records are recogni
 This is a **template**. Replace `APPROVED_PUBLIC_SHA` with the independently approved full public commit. `/root/fa-build` must not exist; the command never overwrites an existing directory.
 
 ```bash
-apt-get update && apt-get install -y git ca-certificates && git clone -n -c core.hooksPath=/dev/null -c core.fsmonitor=false https://github.com/isAliceYoung/fa-build.git /root/fa-build && git -C /root/fa-build checkout --detach APPROVED_PUBLIC_SHA && bash /root/fa-build/install.sh
+apt-get update && apt-get install -y git ca-certificates && git clone -n -c core.hooksPath=/dev/null -c core.fsmonitor=false https://github.com/isAliceYoung/fa-build.git /root/fa-build && git -C /root/fa-build checkout --detach APPROVED_PUBLIC_SHA && test "$(git -C /root/fa-build rev-parse HEAD)" = APPROVED_PUBLIC_SHA && bash /root/fa-build/install.sh
 ```
 
 After GitHub read authorization, the bootstrap scans private repository tags through the existing pinned SSH identity, checks each registered version against its full approved commit (including annotated tags), then prompts `请输入你要安装的版本：`:
@@ -77,7 +89,7 @@ The generic scripts/private_repo.py authorization helper is intentionally shared
 - **formal** is the default. It requires an administrator-preprovisioned, independently signed delivery package, its independently confirmed SHA256, and an independently registered release signer. Pass `--formal-package` and `--formal-package-sha256` when these materials exist. Missing materials stop the process; no local signer is substituted. Prebuilt artifacts are used rather than pretending to have independently signed a local build.
 - **local-test** requires `--mode local-test --ack-local-test-trust`. The host builds as wdbuild, creates a separate local signing identity, and explicitly labels the installation **LOCAL_TEST_TRUST**. The key is not the GitHub Deploy Key. A separate local-test-cc channel and reserved signer names prevent implicit promotion to independent release trust. This mode is for explicitly authorized tests, not production acceptance.
 
-Both modes require `--authorize-install --authorize-isolated-egress` (`install.sh` supplies these for its explicit local-test workflow). These authorize installation on the host where the operator executes the command, not remote operation of an existing server. The interactive inputs are first-key authorization y/Y when needed, then a version. Formal mode also requires independently prepared materials and supports only the isolated engine.
+Both modes require `--authorize-install --authorize-isolated-egress` (`install.sh` supplies these for its explicit local-test workflow). These authorize installation on the host where the operator executes the command, not remote operation of an existing server. The interactive inputs are first-key authorization y/Y when needed, then a version; 1.5.0 also offers optional post-Claude domain binding and its Cloudflare inputs. Formal mode also requires independently prepared materials and supports only the isolated engine.
 
 ## Preparation, resources and boundaries
 
@@ -85,7 +97,7 @@ Local builds target 2 vCPU, 2 GiB RAM, 2 GiB effective Swap and approximately 15
 
 For the isolated engine, no npm build runs as root or a service/guest account. Git credentials stay in a root-only state directory and are not passed to wdbuild. Builds have memory/process/log/tree/disk limits. Each later stage rechecks disk; same-filesystem moves reduce peak duplication. Only journal-owned, verified, obsolete scratch is cleaned. Source, keys, signing audit, database, files, Profile, credentials and installed releases are retained. Beta retains its original unprivileged application account for npm, not the CC wdbuild sandbox.
 
-Prepared private sources live under `/opt/webdesktop-private-build/sources/<approved-sha>`; isolated deployment sources under `/opt/webdesktop/source` are created only by the verified installation engine. Old SHA copies are preserved. Existing deployments, databases or interrupted installs block fresh installation. SSH public keys, proxies and the administrator inbound firewall are preserved. From 1.5.0 the backend listens only on 127.0.0.1:3000; without a domain handoff use an administrator SSH tunnel or a separately reviewed HTTPS proxy. Supplying an approved domain handoff installs that one dedicated Tunnel; no account token is requested on the VPS. Earlier fixed versions retain their previous listener behavior. Existing IPv6 kernel controls are disabled and persisted; absent support is skipped. An active IPv6 SSH session is refused rather than cut off. Beta retains its original network setup.
+Prepared private sources live under `/opt/webdesktop-private-build/sources/<approved-sha>`; isolated deployment sources under `/opt/webdesktop/source` are created only by the verified installation engine. Old SHA copies are preserved. Existing deployments, databases or interrupted installs block fresh installation. SSH public keys, proxies and the administrator inbound firewall are preserved. From 1.5.0 the backend listens only on 127.0.0.1:3000; without a domain handoff use an administrator SSH tunnel or a separately reviewed HTTPS proxy. Supplying an approved domain handoff installs that one dedicated Tunnel without requesting an account token. Alternatively, after successful 1.5.0/Claude installation, the optional root-terminal flow temporarily reads the account API Token to create and bind a new per-VPS Tunnel. Earlier fixed versions retain their previous listener behavior. Existing IPv6 kernel controls are disabled and persisted; absent support is skipped. An active IPv6 SSH session is refused rather than cut off. Beta retains its original network setup.
 
 ## Status and re-entry
 
@@ -115,7 +127,7 @@ After a successful isolated installation, use the original read-only status inte
 bash /opt/webdesktop/source/webdesktop-deploy/install-fresh.sh status
 ```
 
-Credentials are in `/etc/webdesktop-isolated/login.json`; ordinary logs only give this path. Native diagnostics are under `/etc/webdesktop-isolated/install.log`. After a fresh install, open `http://<VPS-IPv4>:3000` using the server IPv4. No SSH tunnel is required; existing provider security groups and host firewall rules must permit TCP 3000. Desktop/admin authentication and same-origin checks remain. HTTPS/domain setup is separate. Public HTTP is unencrypted and browser system-clipboard features may require HTTPS. Existing installations are not automatically rebound or repaired.
+Credentials are in `/etc/webdesktop-isolated/login.json`; ordinary logs only give this path. Native diagnostics are under `/etc/webdesktop-isolated/install.log`. For 1.5.0, use the verified HTTPS URL after domain binding. If binding is skipped, the backend remains server-local at `127.0.0.1:3000`; administrator SSH forwarding or a separately reviewed HTTPS proxy is required. Older fixed versions retain their original listener behavior. Desktop/admin authentication and same-origin checks remain. Existing installations are not automatically rebound or repaired.
 
 After the isolated coordinator returns from successful installation and health checks, this public wrapper automatically executes `/usr/bin/cat -- /etc/webdesktop-isolated/login.json`. It validates the protected root-owned path first and sends the initial credentials directly to the operator's controlling terminal (`/dev/tty`), not captured stdout, stderr, diagnostic records or installation logs. If no controlling terminal is available, or the safe read fails, installation remains successful and the manual read command is printed instead. External terminal/session recording can still record what the operator sees. The file contains initial credentials; later changed passwords remain in the database and are not replaced by the old seed during updates. Failed installation or health checks never execute the credential display. No existing version tag or private application code is changed by this wrapper improvement.
 
@@ -126,6 +138,8 @@ From 1.2.0, new signed isolated installations enable the web update service by d
 For Beta, the original check command is `bash /usr/local/lib/webdesktop-deploy/check.sh`. Initial credential seeds are in `/home/webdesktop/webdesktop/.env`; read locally as root/the application user, never publish. Beta keeps its original `http://127.0.0.1:3000` binding and network behavior. `bash /root/fa-build/install.sh status` reads preparation journals, including Beta. Interrupted installation requires manual review; no reset or automatic replay is provided.
 
 ## Evidence limits
+
+The post-Claude interactive domain addition passed **81 Public local tests** and **190 Private targeted tests (187 passed, three skipped)**. The new dedicated suites cover 17 root provisioning cases and 15 public routing/catalogue/order cases. Public working files and all historical committed trees passed the explicit allowlist, size, helper provenance and secret-pattern audit. These are Windows-hosted simulations, not Debian or live Cloudflare results.
 
 The 1.5.0 catalogue retains all previous version-to-commit mappings and pins the new private entrypoint/helper digests. Local routing/authorization/credential-display/component tests and the public-tree/history audit do not install a VPS. This version changes GUI/PTY system layers; old deployments need separately reviewed root maintenance and Claude configuration migration. The web updater must retain its compatibility refusal. Use the fresh command only on a new server without deployment state. LOCAL_TEST_TRUST is not independent production signing.
 
