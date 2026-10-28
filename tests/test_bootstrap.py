@@ -147,6 +147,7 @@ class Interaction(unittest.TestCase):
     def test_resources_and_insufficient_disk(self):
         self.assertEqual(ui.tools.capacity(2*1024**3,2,2*1024**3,15*1024**3,'local-test')['free'],15*1024**3)
         ui.tools.capacity(2*1024**3,2,2*1024**3,11*1024**3,'local-test')
+        ui.tools.capacity(8*1024**3,2,0,10*1024**3,'local-test')
         with self.assertRaises(ValueError):ui.tools.capacity(2*1024**3,2,0,11*1024**3,'local-test')
         for memory,cpu,free in [(512*1024**2,2,15*1024**3),(2*1024**3,1,15*1024**3),(2*1024**3,2,7*1024**3)]:
             with self.assertRaises(ValueError):ui.tools.capacity(memory,cpu,0,free,'local-test')

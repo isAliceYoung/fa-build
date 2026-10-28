@@ -50,6 +50,9 @@ GROUPS['package'].update({'CLAUDE_SIGNING_FINGERPRINT_MISMATCH','CLAUDE_SIGNING_
 GROUPS['resources'].add('CLAUDE_DISK_RESERVE_REQUIRED')
 GROUPS['state'].add('CLAUDE_EXISTING_APT_CONFIGURATION_REVIEW_REQUIRED')
 GROUPS['state'].add('CLAUDE_REGISTRATION_CONFLICT')
+GROUPS['state'].update({'INVALID_SWAP_PLAN','EXISTING_SWAP_OBJECT_REQUIRES_REVIEW'})
+GROUPS['filesystem'].update({'UNSAFE_SWAP_PARENT','UNSAFE_FSTAB','SWAP_FILESYSTEM_UNSUPPORTED'})
+GROUPS['resources'].update({'SWAP_DISK_RESERVE','CGROUP_SWAP_BUDGET_REQUIRED','LOCAL_BUILD_REQUIRES_2G_EFFECTIVE_SWAP'})
 GROUPS['domain']={
     'CF_ADMIN_TERMINAL_REQUIRED','CF_API_NETWORK','CF_API_REJECTED','CF_API_TOKEN_FORMAT',
     'CF_API_HTTP_401','CF_API_HTTP_403','DOMAIN_AUTOMATION_METADATA_INVALID',
@@ -122,6 +125,14 @@ REASONS.update({
     'DOMAIN_ATTACH_UPDATE_BUSY':'A source update or application update is unfinished. Domain maintenance cannot run concurrently.',
     'BOOTSTRAP_CHECKOUT_REVIEW_REQUIRED':'The existing bootstrap checkout must be an unmodified root-owned Git checkout of the official repository; no pull, reset or replacement was performed.',
     'BOOTSTRAP_UPDATE_REQUIRED':'This application release requires a newer official fa-build bootstrap with Claude launcher registration; update the administrator bootstrap before retrying. Application installation has not started.',
+    'INVALID_SWAP_PLAN':'The recorded Swap target or hardware inputs are invalid; no automatic allocation is permitted.',
+    'EXISTING_SWAP_OBJECT_REQUIRES_REVIEW':'An existing Swap path or configuration must be preserved; its active capacity is insufficient or it cannot safely be reused. Administrator review is required.',
+    'UNSAFE_SWAP_PARENT':'A Swap parent directory has an unexpected owner, type or writable permission; no Swap file was created.',
+    'UNSAFE_FSTAB':'The existing fstab has an unexpected owner, type, permissions or link count; it was not modified.',
+    'SWAP_FILESYSTEM_UNSUPPORTED':'Automatic Swap allocation supports only ext2, ext3, ext4 and XFS. Configure Swap manually on this filesystem.',
+    'SWAP_DISK_RESERVE':'No Swap target fits while retaining the required application/build disk reserve; existing Swap is preserved.',
+    'CGROUP_SWAP_BUDGET_REQUIRED':'The effective ancestor cgroup Swap allowance is below the required installation/build minimum; creating a host Swap file would not fix that limit.',
+    'LOCAL_BUILD_REQUIRES_2G_EFFECTIVE_SWAP':'The local build still lacks its required effective Swap after preparation; the build did not start.',
     'CLAUDE_SIGNING_FINGERPRINT_MISMATCH':'The official Claude APT key does not match the independently pinned fingerprint; no package is installed.',
     'CLAUDE_SIGNING_KEY_SIZE':'The downloaded Claude signing key is empty or exceeds its fixed size limit.',
     'CLAUDE_PACKAGE_NOT_INSTALLED':'APT returned but dpkg does not confirm Claude Desktop as installed.',
@@ -179,7 +190,7 @@ REASONS.update({
     'INSUFFICIENT_RAM_CPU':'Effective memory or CPU capacity is below the minimum.',
     'INSUFFICIENT_PREPARATION_DISK':'Disk capacity is insufficient for build, package, and installation preparation.',
     'LOCAL_BUILD_REQUIRES_2CPU_2G_RAM':'Local test builds require at least two effective CPUs and nominal 2 GiB RAM.',
-    'MINIMUM_1G_SWAP_REQUIRED':'Effective swap after installation must be at least 1 GiB.',
+    'MINIMUM_1G_SWAP_REQUIRED':'The selected installation profile lacks its required effective Swap allowance of approximately 1 GiB.',
     'UNVERIFIED_EARLY_INSTALL_RECOVERY_REQUIRED':'An interrupted installation has no native journal; automatic replay cannot be proven safe.',
     'RESUME_INPUTS_DIFFER':'The commit, package, trust mode, or authorized inputs differ from the retained journal.',
     'UNKNOWN_OR_DIFFERENT_PREPARATION_STATE':'The preparation journal has an unknown schema, commit, trust mode, or phase.',
