@@ -55,7 +55,7 @@ GROUPS['domain']={
     'CF_DNS_RESPONSE','CF_REDIRECT_REFUSED','CF_REQUEST','CF_RESPONSE_JSON','CF_RESPONSE_SIZE',
     'CF_TUNNEL_CONFIGURATION_DRIFT','CF_TUNNEL_CONFIGURATION_NOT_APPLIED','CF_TUNNEL_IDENTITY',
     'CF_UNCERTAIN_TUNNEL_CREATE_REVIEW_REQUIRED','CF_ZONE_IDENTITY','DOMAIN_ACCOUNT_OR_ZONE_ID',
-    'DOMAIN_ADMIN_FAILED','DOMAIN_APT_KEY_MISMATCH','DOMAIN_AUTH_BOUNDARY_FAILED','DOMAIN_BACKEND_PID_MISMATCH',
+    'DOMAIN_ADMIN_FAILED','DOMAIN_APT_KEY_MISMATCH','DOMAIN_APT_KEY_HTTP_FORBIDDEN','DOMAIN_APT_KEY_DOWNLOAD_FAILED','DOMAIN_AUTH_BOUNDARY_FAILED','DOMAIN_BACKEND_PID_MISMATCH',
     'DOMAIN_BETA_NOT_SUPPORTED','DOMAIN_BIND_FAILED','DOMAIN_CAPABLE_RELEASE_REQUIRED',
     'DOMAIN_CLOUDFLARED_VERSION','DOMAIN_COMMIT','DOMAIN_COMMIT_MISMATCH','DOMAIN_CONNECT_TIMEOUT',
     'DOMAIN_CREDENTIAL_FORMAT','DOMAIN_DUPLICATE_FIELDS','DOMAIN_EXISTING_BINDING_CONFLICT',
@@ -107,6 +107,9 @@ REASONS={code:{
     'python':'An unreviewed exception occurred; its message is hidden. Inspect the reported source line.',
 }[category] for category,codes in GROUPS.items() for code in codes}
 REASONS.update({
+    'DOMAIN_APT_KEY_HTTP_FORBIDDEN':'Cloudflare package signing-key download returned HTTP 403. No APT key or repository was written.',
+    'DOMAIN_APT_KEY_DOWNLOAD_FAILED':'Cloudflare package signing-key download returned an unsuccessful HTTP response. No APT key or repository was written.',
+    'DOMAIN_APT_KEY_MISMATCH':'Downloaded Cloudflare package signing-key bytes do not match the pinned SHA256. No APT key or repository was written.',
     'DOMAIN_ATTACH_RECOVERY_REQUIRED':'Domain configuration was interrupted. Preserve the journal and backups; use the explicit attach-recover command.',
     'DOMAIN_ATTACH_RESTART_AUTHORIZATION_REQUIRED':'Attaching a domain restarts the desktop backend. Explicit root authorization is required.',
     'DOMAIN_ATTACH_FILE_CHANGED':'A protected configuration differs from both the saved and planned bytes. Automatic overwrite is refused.',
