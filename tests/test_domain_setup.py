@@ -24,8 +24,10 @@ class CurrentMetadata(unittest.TestCase):
     def test_published_domain_metadata_matches_registered_immutable_release(self):
         value=D.metadata(UI.tools)
         catalogue=UI.metadata()
-        self.assertEqual(set(value['supported_versions']),{'1.5.0'})
-        self.assertEqual(value['supported_versions']['1.5.0'],catalogue['versions']['1.5.0']['commit'])
+        self.assertEqual(set(value['supported_versions']),{'1.5.0','1.6.0'})
+        for version, commit in value['supported_versions'].items():
+            self.assertEqual(commit,catalogue['versions'][version]['commit'])
+        self.assertEqual(value['commit'],value['supported_versions']['1.6.0'])
         self.assertNotEqual(value['commit'],value['supported_versions']['1.5.0'])
         self.assertEqual(set(value['files']),D.MODULES)
 
@@ -131,9 +133,9 @@ class InstallOrder(unittest.TestCase):
         temp=tempfile.TemporaryDirectory();self.addCleanup(temp.cleanup);root=Path(temp.name)
         entry=root/'webdesktop-deploy/scripts/interactive_deploy.py';entry.parent.mkdir(parents=True)
         entry.write_bytes(b'# fixture');(entry.parent/'private_repo.py').write_bytes(b'# helper')
-        version=dict(version='1.5.0',engine='isolated',branch='feature/CC',commit=APP,
+        version=dict(version='1.6.0',engine='isolated',branch='feature/CC',commit=APP,
                      entrypoint='webdesktop-deploy/scripts/interactive_deploy.py',entrypoint_sha256=hashlib.sha256(b'# fixture').hexdigest())
-        catalogue=dict(default_version='1.5.0',versions={'1.5.0':version},source_helper_sha256=hashlib.sha256(b'# helper').hexdigest())
+        catalogue=dict(default_version='1.6.0',versions={'1.6.0':version},source_helper_sha256=hashlib.sha256(b'# helper').hexdigest())
         events=[];source=Mock();source.source=root
         coordinator=types.SimpleNamespace(deploy=lambda *args:events.append('desktop'))
         def claude(*args):

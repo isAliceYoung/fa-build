@@ -28,8 +28,10 @@ beta=module('version_beta',ROOT/'scripts/beta_install.py')
 class Versions(unittest.TestCase):
     def test_catalogue_has_reviewed_fixed_versions(self):
         m=ui.metadata()
-        self.assertEqual(set(m['versions']),{'1.5.0','1.4.0','1.3.0','1.2.0','1.1.0','1.0.0','beta0.1.0'})
-        self.assertEqual(m['default_version'],'1.5.0')
+        self.assertEqual(set(m['versions']),{'1.6.0','1.5.0','1.4.0','1.3.0','1.2.0','1.1.0','1.0.0','beta0.1.0'})
+        self.assertEqual(m['default_version'],'1.6.0')
+        self.assertEqual(m['versions']['1.6.0']['commit'],'9f1bc9329aba6e89b1301a74fcd0d99cf00ef3d0')
+        self.assertEqual(m['versions']['1.6.0']['tag'],'v1.6.0')
         self.assertEqual(m['versions']['1.5.0']['commit'],'1fce41f13dd3b556384e58e35ff8efb1e08b0582')
         self.assertEqual(m['versions']['1.5.0']['tag'],'v1.5.0')
         self.assertEqual(m['versions']['1.4.0']['commit'],'a31c680f4e85111a161466941a838409fff9036e')
@@ -50,7 +52,7 @@ class Versions(unittest.TestCase):
             selected=ui.select_version(ui.metadata(),read=lambda _:next(answers))
         self.assertEqual((selected['engine'],selected['branch']),('legacy-beta','main'))
         with contextlib.redirect_stdout(io.StringIO()):
-            for version in ('1.5.0','1.4.0','1.3.0','1.2.0','1.1.0','1.0.0','beta0.1.0'):
+            for version in ('1.6.0','1.5.0','1.4.0','1.3.0','1.2.0','1.1.0','1.0.0','beta0.1.0'):
                 self.assertEqual(ui.select_version(ui.metadata(),version)['version'],version)
             with self.assertRaisesRegex(ValueError,'UNKNOWN_INSTALL_VERSION'):
                 ui.select_version(ui.metadata(),'latest')
@@ -93,7 +95,7 @@ class Versions(unittest.TestCase):
         self.assertEqual(result['versions']['1.2.0']['commit'],current)
 
     def test_unpublished_tag_is_not_offered_for_installation(self):
-        for missing,default in [('1.5.0','1.4.0'),('1.4.0','1.5.0')]:
+        for missing,default in [('1.6.0','1.5.0'),('1.5.0','1.6.0')]:
             rows='\n'.join(row for row in self.tag_rows().splitlines() if not row.endswith('/v'+missing))
             result=self.live_catalogue(rows)
             self.assertNotIn(missing,result['versions']);self.assertEqual(result['default_version'],default)
