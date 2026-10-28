@@ -33,7 +33,7 @@ GROUPS={
     'resources':{'INSTALL_DISK_RESERVE','INSUFFICIENT_FREE_DISK','INSUFFICIENT_AVAILABLE_SWAP','INSUFFICIENT_RAM_CPU','DISK_RESERVE',
                  'INSUFFICIENT_PREPARATION_DISK','LOCAL_BUILD_REQUIRES_2CPU_2G_RAM','MINIMUM_1G_SWAP_REQUIRED','DISK_SPACE','SOURCE_LIMIT','BUILD_HARDLINK_DISK_RESERVE'},
     'state':{'EXISTING_INSTALLATION','EXISTING_DEPLOYMENT_REFUSED','EXISTING_OR_INTERRUPTED_INSTALL','UNVERIFIED_EARLY_INSTALL_RECOVERY_REQUIRED',
-             'BOOTSTRAP_CHECKOUT_REVIEW_REQUIRED',
+             'BOOTSTRAP_CHECKOUT_REVIEW_REQUIRED','BOOTSTRAP_UPDATE_REQUIRED',
              'RESUME_INPUTS_DIFFER','UNKNOWN_OR_DIFFERENT_PREPARATION_STATE','EXISTING_SOURCE_REQUIRES_REVIEW','INSTALL_TASK_BUSY',
              'LOCKED','STALE_KEY_STAGE','STALE_STAGE','EXISTING_SOURCE'},
     'filesystem':{'PROTECTED_FILE_REQUIRED','ROOT_PATH_REVIEW_REQUIRED','UNSAFE_INSTALL_LOCK','UNSAFE_BOOTSTRAP_LOCK','UNSAFE_FRESH_CACHE','DIAGNOSTIC_WRITE_FAILED',
@@ -49,6 +49,7 @@ GROUPS={
 GROUPS['package'].update({'CLAUDE_SIGNING_FINGERPRINT_MISMATCH','CLAUDE_SIGNING_KEY_SIZE','CLAUDE_PACKAGE_NOT_INSTALLED'})
 GROUPS['resources'].add('CLAUDE_DISK_RESERVE_REQUIRED')
 GROUPS['state'].add('CLAUDE_EXISTING_APT_CONFIGURATION_REVIEW_REQUIRED')
+GROUPS['state'].add('CLAUDE_REGISTRATION_CONFLICT')
 GROUPS['domain']={
     'CF_ADMIN_TERMINAL_REQUIRED','CF_API_NETWORK','CF_API_REJECTED','CF_API_TOKEN_FORMAT',
     'CF_API_HTTP_401','CF_API_HTTP_403','DOMAIN_AUTOMATION_METADATA_INVALID',
@@ -88,7 +89,7 @@ PREFIX='WD_DEPLOY_ERROR '
 # traceback source text, frame locals or arbitrary module/exception attributes.
 PRIVATE_MODULES={'install_requirements.py','interactive_deploy.py','deployment_package.py','fresh_install.py','staging_install.py',
                  'isolated_deploy.py','private_repo.py','private_release.py','release_trust.py','staging_bundle.py','system_layers.py',
-                 'resource_policy.py','preparation_swap.py','deploy_diagnostics.py','domain_contract.py','domain_install.py','domain_attach.py','domain_interactive.py','cloudflare_domain.py'}
+                 'resource_policy.py','preparation_swap.py','deploy_diagnostics.py','domain_contract.py','domain_install.py','domain_attach.py','domain_interactive.py','cloudflare_domain.py','claude_integration.py'}
 PUBLIC_MODULES={'interactive.py','platform_tools.py','private_repo.py','status.py','diagnostics.py','beta_install.py','claude_desktop.py','domain_setup.py'}
 MODULES=PRIVATE_MODULES|{'public/'+name for name in PUBLIC_MODULES}
 
@@ -120,9 +121,11 @@ REASONS.update({
     'DOMAIN_ATTACH_EXISTING_JOB':'Domain preparation already exists. Inspect attach-status; do not delete or reset its state.',
     'DOMAIN_ATTACH_UPDATE_BUSY':'A source update or application update is unfinished. Domain maintenance cannot run concurrently.',
     'BOOTSTRAP_CHECKOUT_REVIEW_REQUIRED':'The existing bootstrap checkout must be an unmodified root-owned Git checkout of the official repository; no pull, reset or replacement was performed.',
+    'BOOTSTRAP_UPDATE_REQUIRED':'This application release requires a newer official fa-build bootstrap with Claude launcher registration; update the administrator bootstrap before retrying. Application installation has not started.',
     'CLAUDE_SIGNING_FINGERPRINT_MISMATCH':'The official Claude APT key does not match the independently pinned fingerprint; no package is installed.',
     'CLAUDE_SIGNING_KEY_SIZE':'The downloaded Claude signing key is empty or exceeds its fixed size limit.',
     'CLAUDE_PACKAGE_NOT_INSTALLED':'APT returned but dpkg does not confirm Claude Desktop as installed.',
+    'CLAUDE_REGISTRATION_CONFLICT':'Claude launcher registration does not match the verified installation, official package identity or existing root catalog; no conflicting entry was overwritten.',
     'CLAUDE_DISK_RESERVE_REQUIRED':'Claude package preparation requires at least 3 GiB free on the relevant filesystems; the working desktop is preserved.',
     'CLAUDE_EXISTING_APT_CONFIGURATION_REVIEW_REQUIRED':'Existing Claude APT source or key differs; it was not overwritten and needs administrator review.',
     'BETA_REQUIRES_EXPLICIT_LEGACY_MODE':'Legacy Beta cannot use the isolated formal signature workflow; explicitly select the local-test legacy entrypoint.',

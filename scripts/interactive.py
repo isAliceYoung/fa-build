@@ -313,10 +313,13 @@ def flow(a,catalogue,read=input):
         # Public dependency preparation runs only AFTER verified isolated install
         # success. Historical Beta installation and its source remain untouched.
         component=load('public_claude_package',HERE/'claude_desktop.py')
-        try:component.install(tools,private)
+        try:
+            component.install(tools,private)
+            if getattr(coordinator,'CLAUDE_DESKTOP_SUPPORT',0)==1:
+                coordinator.register_claude(a,tools)
         except Exception as error:
             tools.diag.report(error)
-            print('WebDesktop 已安装成功；Claude Desktop 软件包安装未完成。不要重新安装桌面；修复原因后执行：python3 -I /root/fa-build/scripts/claude_desktop.py')
+            print('WebDesktop 已安装成功；Claude Desktop 软件包或启动入口配置失败。请保留现场并按诊断修复，不要重新安装桌面。')
             display_credentials(source,getattr(a,'domain_url',None))
             raise
         domain_url=getattr(a,'domain_url',None)

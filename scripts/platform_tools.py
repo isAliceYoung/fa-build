@@ -17,6 +17,7 @@ NODE_NAME='node-v22.23.2-linux-x64'
 NODE_SHA256='d60acfe00a2932254bb0ad20e01b0d74397a0875595de719654b214f4b03f307'
 NODE_URL='https://nodejs.org/dist/v22.23.2/'+NODE_NAME+'.tar.xz'
 TOOLS=Path('/opt/webdesktop-toolchain')
+CLAUDE_DESKTOP_SUPPORT=1
 
 def require(ok,message):
     if not ok:raise ValueError(message)

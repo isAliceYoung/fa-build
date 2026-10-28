@@ -129,7 +129,7 @@ class PublicDomain(unittest.TestCase):
 
 
 class InstallOrder(unittest.TestCase):
-    def flow(self,claude_error=False,domain_error=False):
+    def flow(self,claude_error=False,domain_error=False,launcher=False,launcher_error=False):
         temp=tempfile.TemporaryDirectory();self.addCleanup(temp.cleanup);root=Path(temp.name)
         entry=root/'webdesktop-deploy/scripts/interactive_deploy.py';entry.parent.mkdir(parents=True)
         entry.write_bytes(b'# fixture');(entry.parent/'private_repo.py').write_bytes(b'# helper')
@@ -138,6 +138,12 @@ class InstallOrder(unittest.TestCase):
         catalogue=dict(default_version='1.6.0',versions={'1.6.0':version},source_helper_sha256=hashlib.sha256(b'# helper').hexdigest())
         events=[];source=Mock();source.source=root
         coordinator=types.SimpleNamespace(deploy=lambda *args:events.append('desktop'))
+        if launcher:
+            coordinator.CLAUDE_DESKTOP_SUPPORT=1
+            def register(*args):
+                events.append('launcher')
+                if launcher_error:raise ValueError('CLAUDE_REGISTRATION_CONFLICT')
+            coordinator.register_claude=register
         def claude(*args):
             events.append('claude')
             if claude_error:raise ValueError('CLAUDE_PACKAGE_NOT_INSTALLED')
@@ -155,7 +161,7 @@ class InstallOrder(unittest.TestCase):
              patch.object(UI,'post_install_domain',side_effect=domain), \
              patch.object(UI,'display_credentials',side_effect=lambda *args:events.append('credentials')), \
              contextlib.redirect_stdout(io.StringIO()),contextlib.redirect_stderr(io.StringIO()):
-            if claude_error or domain_error:
+            if claude_error or domain_error or launcher_error:
                 with self.assertRaises(ValueError):UI.flow(args,catalogue)
             else:UI.flow(args,catalogue)
         return events
@@ -165,6 +171,12 @@ class InstallOrder(unittest.TestCase):
 
     def test_claude_failure_does_not_begin_binding(self):
         self.assertEqual(self.flow(claude_error=True),['desktop','claude','credentials'])
+
+    def test_supported_release_registers_launcher_after_package_and_before_binding(self):
+        self.assertEqual(self.flow(launcher=True),['desktop','claude','launcher','domain','credentials'])
+
+    def test_launcher_failure_preserves_desktop_and_credentials_without_binding(self):
+        self.assertEqual(self.flow(launcher=True,launcher_error=True),['desktop','claude','launcher','credentials'])
 
     def test_domain_failure_keeps_access_to_initial_credentials(self):
         self.assertEqual(self.flow(domain_error=True),['desktop','claude','domain','credentials'])
