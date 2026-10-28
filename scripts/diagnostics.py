@@ -70,6 +70,12 @@ GROUPS['domain']={
     'DOMAIN_TOOL_OUTPUT_SIZE','DOMAIN_TUNNEL_ID','DOMAIN_TUNNEL_TOKEN','DOMAIN_UNKNOWN_INSTALLATION',
     'DOMAIN_WINDOWS_PRIVATE_ACL_REQUIRED','UNSAFE_USER_DOMAIN_UNIT','USER_DOMAIN_BINDING_NOT_READY',
     'USER_DOMAIN_CONFIGURATION_CHANGED','USER_DOMAIN_CONFIGURATION_INCOMPLETE','USER_DOMAIN_CONFIGURATION_SIZE',
+    'DOMAIN_ATTACH_FILE_CHANGED','DOMAIN_ATTACH_FILE_SIZE','DOMAIN_ATTACH_SEAL_MISMATCH',
+    'DOMAIN_ATTACH_ENVIRONMENT_MISMATCH','DOMAIN_ATTACH_UNIT_MISMATCH','DOMAIN_ATTACH_INSTALL_CHANGED',
+    'DOMAIN_ATTACH_SIGNED_CC_REQUIRED','DOMAIN_ATTACH_SUPPORTED_VERSION_REQUIRED','DOMAIN_ATTACH_UPDATE_BUSY',
+    'DOMAIN_ATTACH_JOURNAL_MISMATCH','DOMAIN_ATTACH_BACKUP_CHANGED','DOMAIN_ATTACH_EXISTING_JOB',
+    'DOMAIN_ATTACH_RESTART_AUTHORIZATION_REQUIRED','DOMAIN_ATTACH_RECOVERY_REQUIRED',
+    'DOMAIN_ATTACH_LOCAL_HEALTH_FAILED','DOMAIN_ATTACH_RECOVERY_NOT_APPLICABLE','DOMAIN_ATTACH_BINDING_ALREADY_STARTED','DOMAIN_ATTACH_UNSAFE_LOCK',
 }
 CODES=set().union(*GROUPS.values())
 CATEGORIES=set(GROUPS)|{'services','database','network'}
@@ -81,7 +87,7 @@ PREFIX='WD_DEPLOY_ERROR '
 # traceback source text, frame locals or arbitrary module/exception attributes.
 PRIVATE_MODULES={'install_requirements.py','interactive_deploy.py','deployment_package.py','fresh_install.py','staging_install.py',
                  'isolated_deploy.py','private_repo.py','private_release.py','release_trust.py','staging_bundle.py','system_layers.py',
-                 'resource_policy.py','preparation_swap.py','deploy_diagnostics.py','domain_contract.py','domain_install.py','cloudflare_domain.py'}
+                 'resource_policy.py','preparation_swap.py','deploy_diagnostics.py','domain_contract.py','domain_install.py','domain_attach.py','cloudflare_domain.py'}
 PUBLIC_MODULES={'interactive.py','platform_tools.py','private_repo.py','status.py','diagnostics.py','beta_install.py','claude_desktop.py'}
 MODULES=PRIVATE_MODULES|{'public/'+name for name in PUBLIC_MODULES}
 
@@ -101,6 +107,11 @@ REASONS={code:{
     'python':'An unreviewed exception occurred; its message is hidden. Inspect the reported source line.',
 }[category] for category,codes in GROUPS.items() for code in codes}
 REASONS.update({
+    'DOMAIN_ATTACH_RECOVERY_REQUIRED':'Domain configuration was interrupted. Preserve the journal and backups; use the explicit attach-recover command.',
+    'DOMAIN_ATTACH_RESTART_AUTHORIZATION_REQUIRED':'Attaching a domain restarts the desktop backend. Explicit root authorization is required.',
+    'DOMAIN_ATTACH_FILE_CHANGED':'A protected configuration differs from both the saved and planned bytes. Automatic overwrite is refused.',
+    'DOMAIN_ATTACH_EXISTING_JOB':'Domain preparation already exists. Inspect attach-status; do not delete or reset its state.',
+    'DOMAIN_ATTACH_UPDATE_BUSY':'A source update or application update is unfinished. Domain maintenance cannot run concurrently.',
     'BOOTSTRAP_CHECKOUT_REVIEW_REQUIRED':'The existing bootstrap checkout must be an unmodified root-owned Git checkout of the official repository; no pull, reset or replacement was performed.',
     'CLAUDE_SIGNING_FINGERPRINT_MISMATCH':'The official Claude APT key does not match the independently pinned fingerprint; no package is installed.',
     'CLAUDE_SIGNING_KEY_SIZE':'The downloaded Claude signing key is empty or exceeds its fixed size limit.',
