@@ -1,9 +1,17 @@
 {
-  "default_version": "1.4.0",
+  "default_version": "1.5.0",
   "repository": "git@github.com:isAliceYoung/fa.git",
   "schema": 2,
   "source_helper_sha256": "af2ac752783f3fbe045d49e69598d05d702f9c6a9680256d1263af060f323d9f",
   "versions": {
+    "1.5.0": {
+      "branch": "feature/CC",
+      "commit": "1fce41f13dd3b556384e58e35ff8efb1e08b0582",
+      "engine": "isolated",
+      "entrypoint": "webdesktop-deploy/scripts/interactive_deploy.py",
+      "entrypoint_sha256": "8e67e22ae69a343c50ff06e431f9d673b51e4119147511985b59c13032705b33",
+      "tag": "v1.5.0"
+    },
     "1.4.0": {
       "branch": "feature/CC",
       "commit": "a31c680f4e85111a161466941a838409fff9036e",
