@@ -28,8 +28,10 @@ beta=module('version_beta',ROOT/'scripts/beta_install.py')
 class Versions(unittest.TestCase):
     def test_catalogue_has_reviewed_fixed_versions(self):
         m=ui.metadata()
-        self.assertEqual(set(m['versions']),{'1.8.0','1.7.0','1.6.0','1.5.0','1.4.0','1.3.0','1.2.0','1.1.0','1.0.0','beta0.1.0'})
-        self.assertEqual(m['default_version'],'1.8.0')
+        self.assertEqual(set(m['versions']),{'1.8.1','1.8.0','1.7.0','1.6.0','1.5.0','1.4.0','1.3.0','1.2.0','1.1.0','1.0.0','beta0.1.0'})
+        self.assertEqual(m['default_version'],'1.8.1')
+        self.assertEqual(m['versions']['1.8.1']['commit'],'f0ce19000cd3482b51f1093b36586a5d5fa9374f')
+        self.assertEqual(m['versions']['1.8.1']['tag'],'v1.8.1')
         self.assertEqual(m['versions']['1.8.0']['commit'],'c1fe5497577049b9fa1b69fa9de7094f62cadd67')
         self.assertEqual(m['versions']['1.8.0']['tag'],'v1.8.0')
         self.assertEqual(m['versions']['1.7.0']['commit'],'f0c5ab044775a7060b563c0e055e484f165b2eb4')
@@ -56,7 +58,7 @@ class Versions(unittest.TestCase):
             selected=ui.select_version(ui.metadata(),read=lambda _:next(answers))
         self.assertEqual((selected['engine'],selected['branch']),('legacy-beta','main'))
         with contextlib.redirect_stdout(io.StringIO()):
-            for version in ('1.8.0','1.7.0','1.6.0','1.5.0','1.4.0','1.3.0','1.2.0','1.1.0','1.0.0','beta0.1.0'):
+            for version in ('1.8.1','1.8.0','1.7.0','1.6.0','1.5.0','1.4.0','1.3.0','1.2.0','1.1.0','1.0.0','beta0.1.0'):
                 self.assertEqual(ui.select_version(ui.metadata(),version)['version'],version)
             with self.assertRaisesRegex(ValueError,'UNKNOWN_INSTALL_VERSION'):
                 ui.select_version(ui.metadata(),'latest')
@@ -99,7 +101,7 @@ class Versions(unittest.TestCase):
         self.assertEqual(result['versions']['1.2.0']['commit'],current)
 
     def test_unpublished_tag_is_not_offered_for_installation(self):
-        for missing,default in [('1.8.0','1.7.0'),('1.7.0','1.8.0'),('1.6.0','1.8.0'),('1.5.0','1.8.0')]:
+        for missing,default in [('1.8.1','1.8.0'),('1.8.0','1.8.1'),('1.7.0','1.8.1'),('1.6.0','1.8.1'),('1.5.0','1.8.1')]:
             rows='\n'.join(row for row in self.tag_rows().splitlines() if not row.endswith('/v'+missing))
             result=self.live_catalogue(rows)
             self.assertNotIn(missing,result['versions']);self.assertEqual(result['default_version'],default)
@@ -260,7 +262,7 @@ class LatestCatalogue(unittest.TestCase):
             selected=ui.select_version(available,read=lambda _:'1.9.0')
         self.assertEqual(selected['commit'],'d'*40)
         self.assertEqual(selected['entrypoint_sha256'],'e'*64)
-        self.assertIn('可安装版本：1.9.0, 1.8.0, 1.7.0, 1.6.0',output.getvalue())
+        self.assertIn('可安装版本：1.9.0, 1.8.1, 1.8.0, 1.7.0, 1.6.0',output.getvalue())
         self.assertNotIn('1.9.0',ui.metadata()['versions'])
 
     def test_authorized_flow_refreshes_then_reprompts_and_installs_new_fixed_version(self):

@@ -2,13 +2,13 @@
 
 ## Optional automatic HTTPS domain binding
 
-After WebDesktop **1.8.0** and the Claude Desktop package are installed successfully, the root terminal asks `是否绑定域名？[y/N]：`. Choose y to enter Cloudflare Account ID, Zone ID for `ourgoal.win`, and the account API Token using hidden terminal input. The machine ID is read automatically. The private provisioner creates a separate Tunnel and random 24-hex subdomain for this VPS, binds it to `http://127.0.0.1:3000`, and verifies connector readiness, HTTPS health and unauthenticated API refusal before reporting success. Choosing n/Enter/EOF skips binding.
+After WebDesktop **1.8.1** and the Claude Desktop package are installed successfully, the root terminal asks `是否绑定域名？[y/N]：`. Choose y to enter Cloudflare Account ID, Zone ID for `ourgoal.win`, and the account API Token using hidden terminal input. The machine ID is read automatically. The private provisioner creates a separate Tunnel and random 24-hex subdomain for this VPS, binds it to `http://127.0.0.1:3000`, and verifies connector readiness, HTTPS health and unauthenticated API refusal before reporting success. Choosing n/Enter/EOF skips binding.
 
 The administrator explicitly authorizes temporary API Token use on the VPS. The token stays in process memory: no argv, environment, file or diagnostic-log token interface; no subprocess receives it. Core dumps are disabled and token references are dropped before package/service setup. Persistent root-only files contain only the dedicated per-VPS Tunnel credential, binding/provisioning state and IDs. The running connector never receives the account API Token. Do not put the token into a command, chat or repository.
 
 Use an API Token scoped to **Cloudflare Tunnel: Edit** for the intended account and **DNS: Edit** only for `ourgoal.win`. The same account and existing zone reuse their Account ID and Zone ID across new VPS deployments; recheck after changing accounts or recreating/moving a zone. See [Cloudflare's ID guide](https://developers.cloudflare.com/fundamentals/account/find-account-and-zone-ids/).
 
-Automatic binding supports the fixed 1.8.0, 1.7.0, 1.6.0 and 1.5.0 application commits. Older versions and Beta are unchanged and skip this feature. `domain-maintenance.json` separately pins the private maintenance commit and all six helper hashes; the installer uses the existing isolated Deploy Key and verified GitHub host to obtain that exact code. The 1.8.0 entry is the default; all previously published tags and version mappings remain unchanged. This avoids substituting maintenance code for the signed installed application.
+Automatic binding supports the fixed 1.8.1, 1.8.0, 1.7.0, 1.6.0 and 1.5.0 application commits. Older versions and Beta are unchanged and skip this feature. `domain-maintenance.json` separately pins the private maintenance commit and all six helper hashes; the installer uses the existing isolated Deploy Key and verified GitHub host to obtain that exact code. The 1.8.1 entry is the default; all previously published tags and version mappings remain unchanged. This avoids substituting maintenance code for the signed installed application.
 
 After skipping or a reviewed recoverable binding failure, run the dedicated action from this **updated, reviewed** checkout:
 
@@ -60,6 +60,7 @@ After GitHub read authorization, the bootstrap fetches the latest official versi
 
 | Input | Fixed commit | Installer |
 | --- | --- | --- |
+| `1.8.1` | `f0ce19000cd3482b51f1093b36586a5d5fa9374f` (`v1.8.1`) | Fix the missing startup module; compatible with the published 1.7.0 builder. |
 | `1.8.0` | `c1fe5497577049b9fa1b69fa9de7094f62cadd67` (`v1.8.0`) | Package names/icons, longer GUI cold-start waits, shared interactive resources and verified resource-policy continuation after a confirmed 1.7.0 update. |
 | `1.7.0` | `f0c5ab044775a7060b563c0e055e484f165b2eb4` (`v1.7.0`) | Claude desktop launcher, Shift input switching, concurrent Claude/browser, adaptive Swap and controlled system-component updates preserving user data. |
 | `1.6.0` | `9f1bc9329aba6e89b1301a74fcd0d99cf00ef3d0` (`v1.6.0`) | Post-Claude optional automatic Cloudflare subdomain and Tunnel provisioning, hidden temporary root API Token input, verified HTTPS binding. |
@@ -171,3 +172,7 @@ New installations should use this updated bootstrap for 1.7.0 domain binding: ol
 For a supported signed 1.7.0 installation, the existing updater first commits the verified 1.8.0 application/system components. The new authenticated broker resumes a fixed resource-policy transaction under that original confirmed job; it does not ask for another password or Deploy Key. Progress stays pending until resource checks, backups, changes, readback and the matching recovery seal all pass. Unknown policies, modified files, insufficient effective capacity or unproven states stop for review. Existing explicit administrator budget reductions are retained. New installations start with revision 2 directly.
 
 This is two linked transactions: a resource failure restores resource settings while the verified newer application remains installed. User files, browser/Claude profiles, passwords, database and domain identity are never restored over newer data. Interrupted live resource work rolls backwards only after proofs; unknown states hold maintenance for root review. A failed resource attempt is not automatically replayed forwards. Original 1.7.0 pages also receive a pending/failure projection, rather than a premature success. Real Debian 1.7.0-to-1.8.0 acceptance remains NOT RUN; Windows models are not VPS results.
+
+## 1.8.1 startup fix
+
+Version 1.8.0 added an import omitted by the runtime packaging allowlist. 1.8.1 keeps the same startup budgets in an existing packaged module so the published 1.7.0 builder can deliver it. Do not select 1.8.0 for a fresh installation or retry it after the backend startup failure; use 1.8.1. The old tag and catalogue mapping stay immutable. After a verified rollback to 1.7.0, check updates again to refresh the catalogue and select the latest stable patch directly. No reinstall, new Deploy Key or credential reset is needed. The existing resource continuation/data protection remains in place; real Debian 1.7.0-to-1.8.1 acceptance is NOT RUN.
