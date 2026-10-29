@@ -26,6 +26,32 @@ CREDENTIALS=Path('/etc/webdesktop-isolated/login.json')
 CATALOGUE_URL='https://raw.githubusercontent.com/isAliceYoung/fa-build/main/release.json'
 _LOCAL_CATALOGUE=object()
 INSTALL_RECORDS=(Path('/etc/webdesktop-isolated/state.json'),Path('/var/lib/webdesktop-bootstrap/state.json'),Path('/var/lib/webdesktop-fresh/state.json'))
+PASSWORD_COMMAND=Path('/usr/local/sbin/password.sh')
+
+
+def install_password_command():
+    """Optional root-only convenience command; never changes login seeds."""
+    temp=None
+    try:
+        tools.require(os.geteuid()==0,'ROOT_REQUIRED')
+        checker=private.PrivateSource(KEYS,SOURCES/('0'*40),REPO,'feature/CC','0'*40)
+        source=ROOT/'password.sh';checker.check_node(source)
+        checker.directory(PASSWORD_COMMAND.parent,private=False)
+        data=source.read_bytes()
+        if os.path.lexists(PASSWORD_COMMAND):
+            checker.check_node(PASSWORD_COMMAND,private=True)
+            tools.require(PASSWORD_COMMAND.read_bytes()==data,'PASSWORD_COMMAND_EXISTS')
+        else:
+            fd,name=tempfile.mkstemp(prefix='.password-',dir=PASSWORD_COMMAND.parent)
+            temp=Path(name)
+            with os.fdopen(fd,'wb') as stream:
+                os.fchmod(stream.fileno(),0o700);stream.write(data);stream.flush();os.fsync(stream.fileno())
+            os.link(temp,PASSWORD_COMMAND)  # Atomic publication, never clobber an existing file.
+        print('以后在 root 终端输入 password.sh，可查看网址和初始登录信息。')
+    except (OSError,ValueError,private.Failure):
+        print('桌面安装已完成；password.sh 命令未安装。可执行：bash /root/fa-build/password.sh')
+    finally:
+        if temp is not None:temp.unlink()
 
 def reuse_installation():
     """Only skip completed records; never install, upgrade, repair or claim health."""
@@ -359,7 +385,7 @@ def main(argv=None):
     if reuse_installation():return
     print('Trust mode: '+('LOCAL_TEST_TRUST (NOT independent release trust)' if a.mode=='local-test' else 'FORMAL (independent signed package required)'))
     print('Bootstrap checkout: '+str(ROOT))
-    flow(a,m)
+    if flow(a,m):install_password_command()
 
 if __name__=='__main__':
     try:main()

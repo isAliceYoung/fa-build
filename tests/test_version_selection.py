@@ -28,8 +28,9 @@ beta=module('version_beta',ROOT/'scripts/beta_install.py')
 class Versions(unittest.TestCase):
     def test_catalogue_has_reviewed_fixed_versions(self):
         m=ui.metadata()
-        self.assertEqual(set(m['versions']),{'1.8.1','1.8.0','1.7.0','1.6.0','1.5.0','1.4.0','1.3.0','1.2.0','1.1.0','1.0.0','beta0.1.0'})
-        self.assertEqual(m['default_version'],'1.8.1')
+        self.assertEqual(set(m['versions']),{'1.9.0','1.8.1','1.8.0','1.7.0','1.6.0','1.5.0','1.4.0','1.3.0','1.2.0','1.1.0','1.0.0','beta0.1.0'})
+        self.assertEqual(m['default_version'],'1.9.0')
+        self.assertEqual(m['versions']['1.9.0']['commit'],'e5e5bc2b0b2a3764d711043add49b4f1ab012f10')
         self.assertEqual(m['versions']['1.8.1']['commit'],'f0ce19000cd3482b51f1093b36586a5d5fa9374f')
         self.assertEqual(m['versions']['1.8.1']['tag'],'v1.8.1')
         self.assertEqual(m['versions']['1.8.0']['commit'],'c1fe5497577049b9fa1b69fa9de7094f62cadd67')
@@ -58,7 +59,7 @@ class Versions(unittest.TestCase):
             selected=ui.select_version(ui.metadata(),read=lambda _:next(answers))
         self.assertEqual((selected['engine'],selected['branch']),('legacy-beta','main'))
         with contextlib.redirect_stdout(io.StringIO()):
-            for version in ('1.8.1','1.8.0','1.7.0','1.6.0','1.5.0','1.4.0','1.3.0','1.2.0','1.1.0','1.0.0','beta0.1.0'):
+            for version in ('1.9.0','1.8.1','1.8.0','1.7.0','1.6.0','1.5.0','1.4.0','1.3.0','1.2.0','1.1.0','1.0.0','beta0.1.0'):
                 self.assertEqual(ui.select_version(ui.metadata(),version)['version'],version)
             with self.assertRaisesRegex(ValueError,'UNKNOWN_INSTALL_VERSION'):
                 ui.select_version(ui.metadata(),'latest')
@@ -101,7 +102,7 @@ class Versions(unittest.TestCase):
         self.assertEqual(result['versions']['1.2.0']['commit'],current)
 
     def test_unpublished_tag_is_not_offered_for_installation(self):
-        for missing,default in [('1.8.1','1.8.0'),('1.8.0','1.8.1'),('1.7.0','1.8.1'),('1.6.0','1.8.1'),('1.5.0','1.8.1')]:
+        for missing,default in [('1.9.0','1.8.1'),('1.8.1','1.9.0'),('1.8.0','1.9.0'),('1.7.0','1.9.0'),('1.6.0','1.9.0'),('1.5.0','1.9.0')]:
             rows='\n'.join(row for row in self.tag_rows().splitlines() if not row.endswith('/v'+missing))
             result=self.live_catalogue(rows)
             self.assertNotIn(missing,result['versions']);self.assertEqual(result['default_version'],default)
@@ -235,9 +236,9 @@ class LatestCatalogue(unittest.TestCase):
     def setUp(self):
         self.baseline=ui.metadata()
         self.new=json.loads(json.dumps(self.baseline))
-        item=dict(self.new['versions']['1.8.0'],commit='d'*40,tag='v1.9.0',entrypoint_sha256='e'*64)
-        self.new['versions']['1.9.0']=item
-        self.new['default_version']='1.9.0'
+        item=dict(self.new['versions']['1.8.0'],commit='d'*40,tag='v1.10.0',entrypoint_sha256='e'*64)
+        self.new['versions']['1.10.0']=item
+        self.new['default_version']='1.10.0'
 
     def refresh(self,value=None,raw=None,status=200,url=None,error=None):
         response=io.BytesIO(raw if raw is not None else json.dumps(value if value is not None else self.new).encode())
@@ -254,23 +255,23 @@ class LatestCatalogue(unittest.TestCase):
 
     def test_latest_registered_version_appears_without_updating_local_metadata(self):
         value=self.refresh()
-        self.assertNotIn('1.9.0',self.baseline['versions'])
+        self.assertNotIn('1.10.0',self.baseline['versions'])
         source=types.SimpleNamespace(locked=contextlib.nullcontext,verify_local=lambda:None,
             git=lambda *args:'\n'.join(item['commit']+'\trefs/tags/'+item['tag'] for item in value['versions'].values()))
         with contextlib.redirect_stdout(io.StringIO()) as output:
             available=ui.available_versions(value,source)
-            selected=ui.select_version(available,read=lambda _:'1.9.0')
+            selected=ui.select_version(available,read=lambda _:'1.10.0')
         self.assertEqual(selected['commit'],'d'*40)
         self.assertEqual(selected['entrypoint_sha256'],'e'*64)
-        self.assertIn('可安装版本：1.9.0, 1.8.1, 1.8.0, 1.7.0, 1.6.0',output.getvalue())
-        self.assertNotIn('1.9.0',ui.metadata()['versions'])
+        self.assertIn('可安装版本：1.10.0, 1.9.0, 1.8.1, 1.8.0, 1.7.0, 1.6.0',output.getvalue())
+        self.assertNotIn('1.10.0',ui.metadata()['versions'])
 
     def test_authorized_flow_refreshes_then_reprompts_and_installs_new_fixed_version(self):
         temp=tempfile.TemporaryDirectory();self.addCleanup(temp.cleanup)
         checkout=Path(temp.name)/('d'*40);events=[]
         entry=b'# approved new-version fixture'
         helper=(ROOT/'scripts/private_repo.py').read_bytes()
-        self.new['versions']['1.9.0']['entrypoint_sha256']=hashlib.sha256(entry).hexdigest()
+        self.new['versions']['1.10.0']['entrypoint_sha256']=hashlib.sha256(entry).hexdigest()
         response=io.BytesIO(json.dumps(self.new).encode());response.status=200;response.geturl=lambda:ui.CATALOGUE_URL
         opener=mock.Mock();opener.open.side_effect=lambda *a,**kw:(events.append('catalogue') or response)
         def tags(*args):
@@ -283,7 +284,7 @@ class LatestCatalogue(unittest.TestCase):
             path=checkout/'webdesktop-deploy/scripts';path.mkdir(parents=True)
             (path/'interactive_deploy.py').write_bytes(entry);(path/'private_repo.py').write_bytes(helper)
             return checkout
-        answers=iter(['1.99.0','1.9.0'])
+        answers=iter(['1.99.0','1.10.0'])
         def read(prompt):
             self.assertNotIn('acquire',events)
             answer=next(answers);events.append(answer);return answer
@@ -297,8 +298,8 @@ class LatestCatalogue(unittest.TestCase):
              mock.patch.object(ui,'post_install_domain'),mock.patch.object(ui,'display_credentials'), \
              contextlib.redirect_stdout(io.StringIO()) as output:
             self.assertTrue(ui.flow(args,self.baseline,read))
-        self.assertEqual(events,['authorized','catalogue','tags','1.99.0','1.9.0','acquire'])
-        self.assertEqual(args.version,'1.9.0');self.assertEqual(args.commit,'d'*40)
+        self.assertEqual(events,['authorized','catalogue','tags','1.99.0','1.10.0','acquire'])
+        self.assertEqual(args.version,'1.10.0');self.assertEqual(args.commit,'d'*40)
         coordinator.deploy.assert_called_once_with(args,ui.tools)
         self.assertIn('该版本不可用',output.getvalue())
 
@@ -315,8 +316,8 @@ class LatestCatalogue(unittest.TestCase):
         self.reader.assert_called_once_with(65537)
 
     def test_each_run_refreshes_instead_of_using_stale_local_catalogue(self):
-        self.assertNotIn('1.9.0',self.refresh(self.baseline)['versions'])
-        self.assertIn('1.9.0',self.refresh()['versions'])
+        self.assertNotIn('1.10.0',self.refresh(self.baseline)['versions'])
+        self.assertIn('1.10.0',self.refresh()['versions'])
 
     def test_changed_existing_version_entry_is_rejected(self):
         for field,value in [('commit','f'*40),('entrypoint_sha256','f'*64)]:
@@ -361,19 +362,19 @@ class LatestCatalogue(unittest.TestCase):
     def test_repository_branch_path_tag_and_digest_cannot_be_arbitrary(self):
         for field,value in [('branch','main'),('entrypoint','../../code.py'),('commit','d'*39),
                             ('tag','v1.9.1'),('tag',123),('engine','legacy-beta'),('entrypoint_sha256','e'*63)]:
-            changed=json.loads(json.dumps(self.new));changed['versions']['1.9.0'][field]=value
+            changed=json.loads(json.dumps(self.new));changed['versions']['1.10.0'][field]=value
             with self.subTest(field=field),self.assertRaises(ValueError):self.refresh(changed)
         self.new['repository']='git@github.com:other/private.git'
         with self.assertRaises(ValueError):self.refresh()
 
     def test_version_count_is_bounded(self):
         for minor in range(200):
-            self.new['versions']['2.'+str(minor)+'.0']=dict(self.new['versions']['1.9.0'],tag='v2.'+str(minor)+'.0')
+            self.new['versions']['2.'+str(minor)+'.0']=dict(self.new['versions']['1.10.0'],tag='v2.'+str(minor)+'.0')
         with self.assertRaisesRegex(ValueError,'APPROVED_METADATA_REQUIRED'):ui.metadata(self.new)
 
     def test_versions_are_sorted_numerically_with_beta_after_stable(self):
         for version in ('1.10.0','1.11.0'):
-            self.new['versions'][version]=dict(self.new['versions']['1.9.0'],tag='v'+version)
+            self.new['versions'][version]=dict(self.new['versions']['1.10.0'],tag='v'+version)
         source=types.SimpleNamespace(locked=contextlib.nullcontext,verify_local=lambda:None,
             git=lambda *args:'\n'.join(item['commit']+'\trefs/tags/'+item['tag'] for item in self.new['versions'].values()))
         with contextlib.redirect_stdout(io.StringIO()):value=ui.available_versions(self.new,source)

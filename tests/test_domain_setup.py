@@ -24,10 +24,11 @@ class CurrentMetadata(unittest.TestCase):
     def test_published_domain_metadata_matches_registered_immutable_release(self):
         value=D.metadata(UI.tools)
         catalogue=UI.metadata()
-        self.assertEqual(set(value['supported_versions']),{'1.5.0','1.6.0','1.7.0','1.8.0','1.8.1'})
+        self.assertEqual(set(value['supported_versions']),{'1.5.0','1.6.0','1.7.0','1.8.0','1.8.1','1.9.0'})
         for version, commit in value['supported_versions'].items():
             self.assertEqual(commit,catalogue['versions'][version]['commit'])
-        self.assertEqual(value['commit'],value['supported_versions']['1.8.1'])
+        self.assertEqual(value['commit'],value['supported_versions']['1.9.0'])
+        self.assertNotEqual(value['commit'],value['supported_versions']['1.8.1'])
         self.assertNotEqual(value['commit'],value['supported_versions']['1.8.0'])
         self.assertNotEqual(value['commit'],value['supported_versions']['1.7.0'])
         self.assertNotEqual(value['commit'],value['supported_versions']['1.6.0'])

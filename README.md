@@ -1,14 +1,33 @@
 # WebDesktop Public Bootstrap
 
+## WebDesktop 1.9.0
+
+Use CMCP 4.7.0 with WebDesktop 1.9.0 for browser-direct HTTPS access and retained automatic login. Old versions keep their fixed mappings. This release also includes draggable desktop icons, failed-update cleanup with retained reasons, and the resource recovery fixes. Update preflight no longer imposes a fixed 8 GiB free-disk threshold; fresh installation and actual build/rollback space checks remain.
+
+## Print initial login information
+
+After a successful fresh isolated installation using this bootstrap, run
+`password.sh` in the VPS root terminal. It displays the saved desktop URL,
+administrator URL and initial login information. If no domain is bound, it
+shows the loopback address for SSH tunnel access. Later password changes are
+not recoverable from the initial credential file. This command never changes
+credentials, database contents or domain configuration.
+
+The root-only command is installed at `/usr/local/sbin/password.sh`. An existing
+different file at that path is preserved. For an existing installation, from
+this reviewed bootstrap checkout, run `bash /root/fa-build/password.sh` or
+install the script once with
+`install -m 700 /root/fa-build/password.sh /usr/local/sbin/password.sh`.
+
 ## Optional automatic HTTPS domain binding
 
-After WebDesktop **1.8.1** and the Claude Desktop package are installed successfully, the root terminal asks `是否绑定域名？[y/N]：`. Choose y to enter Cloudflare Account ID, Zone ID for `ourgoal.win`, and the account API Token using hidden terminal input. The machine ID is read automatically. The private provisioner creates a separate Tunnel and random 24-hex subdomain for this VPS, binds it to `http://127.0.0.1:3000`, and verifies connector readiness, HTTPS health and unauthenticated API refusal before reporting success. Choosing n/Enter/EOF skips binding.
+After WebDesktop **1.9.0** and the Claude Desktop package are installed successfully, the root terminal asks `是否绑定域名？[y/N]：`. Choose y to enter Cloudflare Account ID, Zone ID for `ourgoal.win`, and the account API Token using hidden terminal input. The machine ID is read automatically. The private provisioner creates a separate Tunnel and random 24-hex subdomain for this VPS, binds it to `http://127.0.0.1:3000`, and verifies connector readiness, HTTPS health and unauthenticated API refusal before reporting success. Choosing n/Enter/EOF skips binding.
 
 The administrator explicitly authorizes temporary API Token use on the VPS. The token stays in process memory: no argv, environment, file or diagnostic-log token interface; no subprocess receives it. Core dumps are disabled and token references are dropped before package/service setup. Persistent root-only files contain only the dedicated per-VPS Tunnel credential, binding/provisioning state and IDs. The running connector never receives the account API Token. Do not put the token into a command, chat or repository.
 
 Use an API Token scoped to **Cloudflare Tunnel: Edit** for the intended account and **DNS: Edit** only for `ourgoal.win`. The same account and existing zone reuse their Account ID and Zone ID across new VPS deployments; recheck after changing accounts or recreating/moving a zone. See [Cloudflare's ID guide](https://developers.cloudflare.com/fundamentals/account/find-account-and-zone-ids/).
 
-Automatic binding supports the fixed 1.8.1, 1.8.0, 1.7.0, 1.6.0 and 1.5.0 application commits. Older versions and Beta are unchanged and skip this feature. `domain-maintenance.json` separately pins the private maintenance commit and all six helper hashes; the installer uses the existing isolated Deploy Key and verified GitHub host to obtain that exact code. The 1.8.1 entry is the default; all previously published tags and version mappings remain unchanged. This avoids substituting maintenance code for the signed installed application.
+Automatic binding supports the fixed 1.9.0, 1.8.1, 1.8.0, 1.7.0, 1.6.0 and 1.5.0 application commits. Older versions and Beta are unchanged and skip this feature. `domain-maintenance.json` separately pins the private maintenance commit and all six helper hashes; the installer uses the existing isolated Deploy Key and verified GitHub host to obtain that exact code. The 1.9.0 entry is the default; all previously published tags and version mappings remain unchanged. This avoids substituting maintenance code for the signed installed application.
 
 After skipping or a reviewed recoverable binding failure, run the dedicated action from this **updated, reviewed** checkout:
 
