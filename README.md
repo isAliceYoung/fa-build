@@ -1,5 +1,9 @@
 # WebDesktop Public Bootstrap
 
+## WebDesktop 1.10.1
+
+Sockets and FIFOs under the guest home no longer block updates: they hold no data, so they are left out of the user data backup and its proof. Device nodes still require review. Updating to this version still uses the installed updater, so remove any socket or FIFO under `/home/wdguest` first; do not edit files under `/opt/webdesktop/source`.
+
 ## WebDesktop 1.10.0
 
 A dropped graphical connection no longer ends the application: it keeps running for 5 minutes and the page re-attaches automatically. Closing the window still ends it at once, and a real shortage of memory can still end it. Updates no longer require a fixed CPU, memory or Swap minimum and report a real shortage when it happens. Updating from 1.9.0 still follows the rules of the installed 1.9.0: 2 CPUs, 1800 MiB RAM and 2000 MiB Swap.
@@ -25,13 +29,13 @@ install the script once with
 
 ## Optional automatic HTTPS domain binding
 
-After WebDesktop **1.10.0** and the Claude Desktop package are installed successfully, the root terminal asks `是否绑定域名？[y/N]：`. Choose y to enter Cloudflare Account ID, Zone ID for `ourgoal.win`, and the account API Token using hidden terminal input. The machine ID is read automatically. The private provisioner creates a separate Tunnel and random 24-hex subdomain for this VPS, binds it to `http://127.0.0.1:3000`, and verifies connector readiness, HTTPS health and unauthenticated API refusal before reporting success. Choosing n/Enter/EOF skips binding.
+After WebDesktop **1.10.1** and the Claude Desktop package are installed successfully, the root terminal asks `是否绑定域名？[y/N]：`. Choose y to enter Cloudflare Account ID, Zone ID for `ourgoal.win`, and the account API Token using hidden terminal input. The machine ID is read automatically. The private provisioner creates a separate Tunnel and random 24-hex subdomain for this VPS, binds it to `http://127.0.0.1:3000`, and verifies connector readiness, HTTPS health and unauthenticated API refusal before reporting success. Choosing n/Enter/EOF skips binding.
 
 The administrator explicitly authorizes temporary API Token use on the VPS. The token stays in process memory: no argv, environment, file or diagnostic-log token interface; no subprocess receives it. Core dumps are disabled and token references are dropped before package/service setup. Persistent root-only files contain only the dedicated per-VPS Tunnel credential, binding/provisioning state and IDs. The running connector never receives the account API Token. Do not put the token into a command, chat or repository.
 
 Use an API Token scoped to **Cloudflare Tunnel: Edit** for the intended account and **DNS: Edit** only for `ourgoal.win`. The same account and existing zone reuse their Account ID and Zone ID across new VPS deployments; recheck after changing accounts or recreating/moving a zone. See [Cloudflare's ID guide](https://developers.cloudflare.com/fundamentals/account/find-account-and-zone-ids/).
 
-Automatic binding supports the fixed 1.10.0, 1.9.0, 1.8.1, 1.8.0, 1.7.0, 1.6.0 and 1.5.0 application commits. Older versions and Beta are unchanged and skip this feature. `domain-maintenance.json` separately pins the private maintenance commit and all six helper hashes; the installer uses the existing isolated Deploy Key and verified GitHub host to obtain that exact code. The 1.9.0 entry is the default; all previously published tags and version mappings remain unchanged. This avoids substituting maintenance code for the signed installed application.
+Automatic binding supports the fixed 1.10.1, 1.10.0, 1.9.0, 1.8.1, 1.8.0, 1.7.0, 1.6.0 and 1.5.0 application commits. Older versions and Beta are unchanged and skip this feature. `domain-maintenance.json` separately pins the private maintenance commit and all six helper hashes; the installer uses the existing isolated Deploy Key and verified GitHub host to obtain that exact code. The 1.9.0 entry is the default; all previously published tags and version mappings remain unchanged. This avoids substituting maintenance code for the signed installed application.
 
 After skipping or a reviewed recoverable binding failure, run the dedicated action from this **updated, reviewed** checkout:
 
@@ -83,6 +87,7 @@ After GitHub read authorization, the bootstrap fetches the latest official versi
 
 | Input | Fixed commit | Installer |
 | --- | --- | --- |
+| `1.10.1` | `ad083192cc69411c3e917fa253780d0c95d22be7` (`v1.10.1`) | Sockets and FIFOs under the guest home no longer block updates. |
 | `1.10.0` | `67af5158589db605c10480504dcd9fb2f4f5f430` (`v1.10.0`) | Keep a disconnected graphical application running and re-attach automatically; no fixed CPU, memory or Swap gate for updates. |
 | `1.9.0` | `e5e5bc2b0b2a3764d711043add49b4f1ab012f10` (`v1.9.0`) | Browser-direct HTTPS access with CMCP 4.7.0, retained automatic login, draggable desktop icons and failed-update cleanup. |
 | `1.8.1` | `f0ce19000cd3482b51f1093b36586a5d5fa9374f` (`v1.8.1`) | Fix the missing startup module; compatible with the published 1.7.0 builder. |
