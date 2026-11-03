@@ -93,7 +93,7 @@ PREFIX='WD_DEPLOY_ERROR '
 PRIVATE_MODULES={'install_requirements.py','interactive_deploy.py','deployment_package.py','fresh_install.py','staging_install.py',
                  'isolated_deploy.py','private_repo.py','private_release.py','release_trust.py','staging_bundle.py','system_layers.py',
                  'resource_policy.py','preparation_swap.py','deploy_diagnostics.py','domain_contract.py','domain_install.py','domain_attach.py','domain_interactive.py','cloudflare_domain.py','claude_integration.py'}
-PUBLIC_MODULES={'interactive.py','platform_tools.py','private_repo.py','status.py','diagnostics.py','beta_install.py','claude_desktop.py','domain_setup.py'}
+PUBLIC_MODULES={'interactive.py','platform_tools.py','private_repo.py','status.py','diagnostics.py','beta_install.py','claude_desktop.py','claude_cli.py','domain_setup.py'}
 MODULES=PRIVATE_MODULES|{'public/'+name for name in PUBLIC_MODULES}
 
 # Every emitted reason is static and reviewed. stderr and exception messages

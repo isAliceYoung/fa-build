@@ -24,11 +24,11 @@ class CurrentMetadata(unittest.TestCase):
     def test_published_domain_metadata_matches_registered_immutable_release(self):
         value=D.metadata(UI.tools)
         catalogue=UI.metadata()
-        self.assertEqual(set(value['supported_versions']),{'1.5.0','1.6.0','1.7.0','1.8.0','1.8.1','1.9.0','1.10.0','1.10.1','1.10.2','1.10.3'})
+        self.assertEqual(set(value['supported_versions']),{'1.5.0','1.6.0','1.7.0','1.8.0','1.8.1','1.9.0','1.10.0','1.10.1','1.10.2','1.10.3','1.11.0'})
         for version, commit in value['supported_versions'].items():
             self.assertEqual(commit,catalogue['versions'][version]['commit'])
-        self.assertEqual(value['commit'],value['supported_versions']['1.10.3'])
-        self.assertNotEqual(value['commit'],value['supported_versions']['1.10.2'])
+        self.assertEqual(value['commit'],value['supported_versions']['1.11.0'])
+        self.assertNotEqual(value['commit'],value['supported_versions']['1.10.3'])
         self.assertNotEqual(value['commit'],value['supported_versions']['1.8.1'])
         self.assertNotEqual(value['commit'],value['supported_versions']['1.8.0'])
         self.assertNotEqual(value['commit'],value['supported_versions']['1.7.0'])
@@ -134,7 +134,7 @@ class PublicDomain(unittest.TestCase):
 
 
 class InstallOrder(unittest.TestCase):
-    def flow(self,claude_error=False,domain_error=False,launcher=False,launcher_error=False):
+    def flow(self,claude_error=False,domain_error=False,launcher=False,launcher_error=False,cli_error=False):
         temp=tempfile.TemporaryDirectory();self.addCleanup(temp.cleanup);root=Path(temp.name)
         entry=root/'webdesktop-deploy/scripts/interactive_deploy.py';entry.parent.mkdir(parents=True)
         entry.write_bytes(b'# fixture');(entry.parent/'private_repo.py').write_bytes(b'# helper')
@@ -152,11 +152,16 @@ class InstallOrder(unittest.TestCase):
         def claude(*args):
             events.append('claude')
             if claude_error:raise ValueError('CLAUDE_PACKAGE_NOT_INSTALLED')
+        def cli(*args):
+            events.append('cli')
+            if cli_error:raise ValueError('CLAUDE_CLI_NOT_INSTALLED')
         def domain(*args):
             events.append('domain')
             if domain_error:raise ValueError('DOMAIN_CONNECT_TIMEOUT')
             return URL
-        def load(name,path):return coordinator if name=='approved_private_deployment' else types.SimpleNamespace(install=claude)
+        def load(name,path):
+            if name=='approved_private_deployment':return coordinator
+            return types.SimpleNamespace(install=cli if name=='public_claude_cli' else claude)
         args=types.SimpleNamespace(mode='local-test')
         with patch.object(UI.tools,'initial'),patch.object(UI.tools.diag,'append'), \
              patch.object(UI.private,'PrivateSource',return_value=source),patch.object(UI,'authorize_source',return_value=True), \
@@ -171,20 +176,23 @@ class InstallOrder(unittest.TestCase):
             else:UI.flow(args,catalogue)
         return events
 
+    def test_a_failed_cli_install_never_blocks_the_desktop_or_binding(self):
+        self.assertEqual(self.flow(cli_error=True),['desktop','claude','cli','domain','credentials'])
+
     def test_binding_prompt_follows_successful_desktop_and_claude(self):
-        self.assertEqual(self.flow(),['desktop','claude','domain','credentials'])
+        self.assertEqual(self.flow(),['desktop','claude','cli','domain','credentials'])
 
     def test_claude_failure_does_not_begin_binding(self):
         self.assertEqual(self.flow(claude_error=True),['desktop','claude','credentials'])
 
     def test_supported_release_registers_launcher_after_package_and_before_binding(self):
-        self.assertEqual(self.flow(launcher=True),['desktop','claude','launcher','domain','credentials'])
+        self.assertEqual(self.flow(launcher=True),['desktop','claude','launcher','cli','domain','credentials'])
 
     def test_launcher_failure_preserves_desktop_and_credentials_without_binding(self):
         self.assertEqual(self.flow(launcher=True,launcher_error=True),['desktop','claude','launcher','credentials'])
 
     def test_domain_failure_keeps_access_to_initial_credentials(self):
-        self.assertEqual(self.flow(domain_error=True),['desktop','claude','domain','credentials'])
+        self.assertEqual(self.flow(domain_error=True),['desktop','claude','cli','domain','credentials'])
 
     def test_existing_domain_handoff_does_not_trigger_second_prompt(self):
         args=types.SimpleNamespace(domain_url=URL)
