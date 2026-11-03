@@ -12,6 +12,8 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('claude_cli', ROOT/'scripts/claude_cli.py')
 c = importlib.util.module_from_spec(spec); spec.loader.exec_module(c)
+spec = importlib.util.spec_from_file_location('claude_cli_diagnostics', ROOT/'scripts/diagnostics.py')
+diagnostics = importlib.util.module_from_spec(spec); spec.loader.exec_module(diagnostics)
 
 
 class ClaudeCli(unittest.TestCase):
@@ -30,7 +32,7 @@ class ClaudeCli(unittest.TestCase):
             if args[0] == '/usr/bin/env' and installs:
                 binary.parent.mkdir(parents=True, exist_ok=True); binary.write_text('#!/bin/sh\n')
             return '2.1.317 (Claude Code)\n' if args[-1] == '--version' else ''
-        tools = types.SimpleNamespace(require=require, run=run, diag=types.SimpleNamespace(begin=lambda stage: None))
+        tools = types.SimpleNamespace(require=require, run=run, diag=types.SimpleNamespace(begin=diagnostics.set_stage))
         for p in (mock.patch.object(c, 'ROOT', root), mock.patch.object(c, 'BINARY', binary), mock.patch.object(c, 'LINK', link),
                   mock.patch.object(c.shutil, 'disk_usage', return_value=types.SimpleNamespace(free=free)),
                   mock.patch.object(c.os, 'geteuid', create=True, return_value=0)):

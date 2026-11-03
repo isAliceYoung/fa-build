@@ -15,7 +15,7 @@ import time
 ROOT=Path('/var/log/webdesktop-deploy')
 STAGES={'bootstrap','authorization','dependencies','building','packaging','delivery','fresh-preflight','tools','extracting','extracted',
         'source-ready','installing','native-preflight','native-extraction','ipv4-and-swap','packages','source-and-artifact','resource-policy',
-        'identities-and-layers','database-and-configuration','units-and-budget','start-service','ready','recovery','claude-package','domain-binding'}
+        'identities-and-layers','database-and-configuration','units-and-budget','start-service','ready','recovery','claude-package','claude-cli','domain-binding'}
 GROUPS={
     'accounts':{'HOST_ACCOUNT_AUDIT_FAILED','HOST_ACCOUNT_SSH_REVIEW_REQUIRED','HOST_ACCOUNT_SUDO_REVIEW_REQUIRED','HOST_ACCOUNT_ACTIVE_REVIEW_REQUIRED',
                 'HOST_ACCOUNT_HOME_REVIEW_REQUIRED','HOST_ACCOUNT_IDENTITY_REVIEW_REQUIRED','HOST_ACCOUNT_LOGIN_REVIEW_REQUIRED',
