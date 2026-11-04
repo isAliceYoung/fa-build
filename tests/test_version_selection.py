@@ -28,8 +28,9 @@ beta=module('version_beta',ROOT/'scripts/beta_install.py')
 class Versions(unittest.TestCase):
     def test_catalogue_has_reviewed_fixed_versions(self):
         m=ui.metadata()
-        self.assertEqual(set(m['versions']),{'1.11.0','1.10.3','1.10.2','1.10.1','1.10.0','1.9.0','1.8.1','1.8.0','1.7.0','1.6.0','1.5.0','1.4.0','1.3.0','1.2.0','1.1.0','1.0.0','beta0.1.0'})
-        self.assertEqual(m['default_version'],'1.11.0')
+        self.assertEqual(set(m['versions']),{'1.11.1','1.11.0','1.10.3','1.10.2','1.10.1','1.10.0','1.9.0','1.8.1','1.8.0','1.7.0','1.6.0','1.5.0','1.4.0','1.3.0','1.2.0','1.1.0','1.0.0','beta0.1.0'})
+        self.assertEqual(m['default_version'],'1.11.1')
+        self.assertEqual(m['versions']['1.11.1']['commit'],'50cbbd1565cdb1f2d006b5b897f76e290ca956a4')
         self.assertEqual(m['versions']['1.11.0']['commit'],'1d00a22116e6fed1ecf199146ac52e1ab1bb7d83')
         self.assertEqual(m['versions']['1.10.3']['commit'],'40a29d2cd1114c4362292bec030ff6eeb2cd72a0')
         self.assertEqual(m['versions']['1.10.2']['commit'],'1dc77b735b71468dc3d367cc40ed184ca0b65269')
@@ -64,7 +65,7 @@ class Versions(unittest.TestCase):
             selected=ui.select_version(ui.metadata(),read=lambda _:next(answers))
         self.assertEqual((selected['engine'],selected['branch']),('legacy-beta','main'))
         with contextlib.redirect_stdout(io.StringIO()):
-            for version in ('1.11.0','1.10.3','1.10.2','1.10.1','1.10.0','1.9.0','1.8.1','1.8.0','1.7.0','1.6.0','1.5.0','1.4.0','1.3.0','1.2.0','1.1.0','1.0.0','beta0.1.0'):
+            for version in ('1.11.1','1.11.0','1.10.3','1.10.2','1.10.1','1.10.0','1.9.0','1.8.1','1.8.0','1.7.0','1.6.0','1.5.0','1.4.0','1.3.0','1.2.0','1.1.0','1.0.0','beta0.1.0'):
                 self.assertEqual(ui.select_version(ui.metadata(),version)['version'],version)
             with self.assertRaisesRegex(ValueError,'UNKNOWN_INSTALL_VERSION'):
                 ui.select_version(ui.metadata(),'latest')
@@ -107,7 +108,7 @@ class Versions(unittest.TestCase):
         self.assertEqual(result['versions']['1.2.0']['commit'],current)
 
     def test_unpublished_tag_is_not_offered_for_installation(self):
-        for missing,default in [('1.11.0','1.10.3'),('1.10.3','1.11.0'),('1.10.2','1.11.0'),('1.10.1','1.11.0'),('1.10.0','1.11.0'),('1.9.0','1.11.0'),('1.8.1','1.11.0'),('1.8.0','1.11.0'),('1.7.0','1.11.0'),('1.6.0','1.11.0'),('1.5.0','1.11.0')]:
+        for missing,default in [('1.11.1','1.11.0'),('1.11.0','1.11.1'),('1.10.3','1.11.1'),('1.10.2','1.11.1'),('1.10.1','1.11.1'),('1.10.0','1.11.1'),('1.9.0','1.11.1'),('1.8.1','1.11.1'),('1.8.0','1.11.1'),('1.7.0','1.11.1'),('1.6.0','1.11.1'),('1.5.0','1.11.1')]:
             rows='\n'.join(row for row in self.tag_rows().splitlines() if not row.endswith('/v'+missing))
             result=self.live_catalogue(rows)
             self.assertNotIn(missing,result['versions']);self.assertEqual(result['default_version'],default)
@@ -268,7 +269,7 @@ class LatestCatalogue(unittest.TestCase):
             selected=ui.select_version(available,read=lambda _:'1.12.0')
         self.assertEqual(selected['commit'],'d'*40)
         self.assertEqual(selected['entrypoint_sha256'],'e'*64)
-        self.assertIn('可安装版本：1.12.0, 1.11.0, 1.10.3, 1.10.2, 1.10.1, 1.10.0, 1.9.0, 1.8.1, 1.8.0, 1.7.0',output.getvalue())
+        self.assertIn('可安装版本：1.12.0, 1.11.1, 1.11.0, 1.10.3, 1.10.2, 1.10.1, 1.10.0, 1.9.0, 1.8.1, 1.8.0, 1.7.0',output.getvalue())
         self.assertNotIn('1.12.0',ui.metadata()['versions'])
 
     def test_authorized_flow_refreshes_then_reprompts_and_installs_new_fixed_version(self):
@@ -384,7 +385,7 @@ class LatestCatalogue(unittest.TestCase):
             git=lambda *args:'\n'.join(item['commit']+'\trefs/tags/'+item['tag'] for item in self.new['versions'].values()))
         with contextlib.redirect_stdout(io.StringIO()):value=ui.available_versions(self.new,source)
         names=list(value['versions'])
-        self.assertEqual(names[:3],['1.13.0','1.12.0','1.11.0'])
+        self.assertEqual(names[:3],['1.13.0','1.12.0','1.11.1'])
         self.assertEqual(names[-1],'beta0.1.0')
 
     def test_unavailable_input_reprompts_until_an_exact_listed_version(self):

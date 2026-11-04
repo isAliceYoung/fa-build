@@ -1,5 +1,9 @@
 # WebDesktop Public Bootstrap
 
+## WebDesktop 1.11.1
+
+After each successful update, WebDesktop removes old program versions, their build files and older user data backups. It keeps the current and previous versions and the 2 newest user data backups. Database backups and the records of failed updates stay. A cleanup failure is logged and never fails the update. Cleanup starts with the update after 1.11.1 is installed. Real VPS acceptance remains **NOT RUN**.
+
 ## WebDesktop 1.11.0
 
 The web terminal can run Claude CLI with CMCP tools. It now has the same filtered public network as graphical apps, so anyone who can open it can reach the internet from it. Sessions stay for 6 hours after a disconnect, keep running and replay up to 16 MiB of output, a new window adopts a session left detached, and there are up to 4 terminals.
@@ -43,13 +47,13 @@ install the script once with
 
 ## Optional automatic HTTPS domain binding
 
-After WebDesktop **1.11.0** and the Claude Desktop package are installed successfully, the root terminal asks `是否绑定域名？[y/N]：`. Choose y to enter Cloudflare Account ID, Zone ID for `ourgoal.win`, and the account API Token using hidden terminal input. The machine ID is read automatically. The private provisioner creates a separate Tunnel and random 24-hex subdomain for this VPS, binds it to `http://127.0.0.1:3000`, and verifies connector readiness, HTTPS health and unauthenticated API refusal before reporting success. Choosing n/Enter/EOF skips binding.
+After WebDesktop **1.11.1** and the Claude Desktop package are installed successfully, the root terminal asks `是否绑定域名？[y/N]：`. Choose y to enter Cloudflare Account ID, Zone ID for `ourgoal.win`, and the account API Token using hidden terminal input. The machine ID is read automatically. The private provisioner creates a separate Tunnel and random 24-hex subdomain for this VPS, binds it to `http://127.0.0.1:3000`, and verifies connector readiness, HTTPS health and unauthenticated API refusal before reporting success. Choosing n/Enter/EOF skips binding.
 
 The administrator explicitly authorizes temporary API Token use on the VPS. The token stays in process memory: no argv, environment, file or diagnostic-log token interface; no subprocess receives it. Core dumps are disabled and token references are dropped before package/service setup. Persistent root-only files contain only the dedicated per-VPS Tunnel credential, binding/provisioning state and IDs. The running connector never receives the account API Token. Do not put the token into a command, chat or repository.
 
 Use an API Token scoped to **Cloudflare Tunnel: Edit** for the intended account and **DNS: Edit** only for `ourgoal.win`. The same account and existing zone reuse their Account ID and Zone ID across new VPS deployments; recheck after changing accounts or recreating/moving a zone. See [Cloudflare's ID guide](https://developers.cloudflare.com/fundamentals/account/find-account-and-zone-ids/).
 
-Automatic binding supports the fixed 1.11.0, 1.10.3, 1.10.2, 1.10.1, 1.10.0, 1.9.0, 1.8.1, 1.8.0, 1.7.0, 1.6.0 and 1.5.0 application commits. Older versions and Beta are unchanged and skip this feature. `domain-maintenance.json` separately pins the private maintenance commit and all six helper hashes; the installer uses the existing isolated Deploy Key and verified GitHub host to obtain that exact code. The 1.9.0 entry is the default; all previously published tags and version mappings remain unchanged. This avoids substituting maintenance code for the signed installed application.
+Automatic binding supports the fixed 1.11.1, 1.11.0, 1.10.3, 1.10.2, 1.10.1, 1.10.0, 1.9.0, 1.8.1, 1.8.0, 1.7.0, 1.6.0 and 1.5.0 application commits. Older versions and Beta are unchanged and skip this feature. `domain-maintenance.json` separately pins the private maintenance commit and all six helper hashes; the installer uses the existing isolated Deploy Key and verified GitHub host to obtain that exact code. The 1.9.0 entry is the default; all previously published tags and version mappings remain unchanged. This avoids substituting maintenance code for the signed installed application.
 
 After skipping or a reviewed recoverable binding failure, run the dedicated action from this **updated, reviewed** checkout:
 
@@ -101,6 +105,7 @@ After GitHub read authorization, the bootstrap fetches the latest official versi
 
 | Input | Fixed commit | Installer |
 | --- | --- | --- |
+| `1.11.1` | `50cbbd1565cdb1f2d006b5b897f76e290ca956a4` (`v1.11.1`) | Automatic cleanup after a successful update. |
 | `1.11.0` | `1d00a22116e6fed1ecf199146ac52e1ab1bb7d83` (`v1.11.0`) | Web terminal runs Claude CLI with filtered network, 6-hour sessions and 4 terminals. |
 | `1.10.3` | `40a29d2cd1114c4362292bec030ff6eeb2cd72a0` (`v1.10.3`) | Optional direct connection without Cloudflare after domain binding. |
 | `1.10.2` | `1dc77b735b71468dc3d367cc40ed184ca0b65269` (`v1.10.2`) | Raise the graphical frame cap to 24 frames per second. |
