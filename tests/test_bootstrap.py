@@ -17,6 +17,8 @@ from unittest import mock
 ROOT=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location('public_ui',ROOT/'scripts/interactive.py')
 ui=importlib.util.module_from_spec(spec);spec.loader.exec_module(ui)
+# Offline: these tests model a private repository unless a test says otherwise.
+ui._public[:]=[False]
 
 class Interaction(unittest.TestCase):
     def test_domain_diagnostics_preserve_claude_beta_and_version_errors(self):
@@ -135,6 +137,53 @@ class Interaction(unittest.TestCase):
             with contextlib.redirect_stdout(io.StringIO()),self.assertRaisesRegex(ValueError,'KEY_PAIR'):
                 ui.authorize_source(source,lambda _:'y')
             source.authorized.assert_called_once();source.prepare.assert_not_called()
+
+    def test_a_public_repository_is_read_over_https_without_ssh_or_credentials(self):
+        seen=[]
+        def runner(argv,env,**kwargs):
+            seen.append((argv,env));return types.SimpleNamespace(returncode=0,stdout='c'*40+'\trefs/heads/feature/CC\n',stderr='')
+        source=ui.PublicSource(ui.KEYS,ui.SOURCES/('c'*40),ui.REPO,'feature/CC','c'*40,runner=runner)
+        self.assertEqual(source.authorized(),'c'*40)
+        argv,env=seen[0]
+        self.assertIn(ui.PUBLIC_URL,argv);self.assertNotIn(ui.REPO,argv);self.assertIn('credential.helper=',argv)
+        self.assertEqual(env['GIT_ALLOW_PROTOCOL'],'https');self.assertEqual(env['GIT_TERMINAL_PROMPT'],'0')
+        self.assertFalse({'GIT_SSH_COMMAND','GIT_SSH_VARIANT'}&set(env))
+        # The recorded identity stays the approved repository, whichever transport fetched it.
+        self.assertEqual(source.repo,ui.REPO);self.assertEqual(ui.private.repository(ui.PUBLIC_URL),ui.REPO)
+
+    def test_the_repository_is_asked_once_and_a_refusal_means_private(self):
+        calls=[]
+        def authorized(self):
+            calls.append(1);raise ui.private.Failure('COMMAND','terminal prompts disabled')
+        with mock.patch.object(ui,'_public',[]),mock.patch.object(ui.PublicSource,'authorized',authorized):
+            self.assertFalse(ui.public_repository());self.assertFalse(ui.public_repository())
+        self.assertEqual(len(calls),1)
+
+    def test_a_public_repository_skips_deploy_key_authorization(self):
+        with tempfile.TemporaryDirectory() as directory:
+            for existing in (False,True):
+                source=mock.Mock();source.key=Path(directory)/('deploy_key' if existing else 'absent')
+                if existing:source.key.write_bytes(b'fixture')
+                source.locked.side_effect=lambda:contextlib.nullcontext()
+                output=io.StringIO()
+                with self.subTest(existing=existing),mock.patch.object(ui,'_public',[True]),contextlib.redirect_stdout(output):
+                    self.assertTrue(ui.authorize_source(source,mock.Mock(side_effect=AssertionError('no question'))))
+                    source.authorized.assert_not_called();self.assertIn('SKIPPED',output.getvalue())
+                    self.assertNotIn('settings/keys',output.getvalue())
+                    # A local key is still made: the installed signer must differ from it.
+                    if existing:source.verify_local.assert_called_once();source.prepare.assert_not_called()
+                    else:source.prepare.assert_called_once()
+
+    def test_reader_switches_transport_only_for_a_public_repository(self):
+        source=ui.private.PrivateSource(ui.KEYS,ui.SOURCES/('c'*40),ui.REPO,'feature/CC','c'*40)
+        with mock.patch.object(ui,'_public',[False]):self.assertIs(ui.reader(source),source)
+        with mock.patch.object(ui,'_public',[True]):
+            public=ui.reader(source)
+            self.assertIsInstance(public,ui.PublicSource)
+            self.assertEqual((public.state,public.source,public.repo,public.branch,public.commit),(source.state,source.source,source.repo,source.branch,source.commit))
+            self.assertIs(ui.reader(public),public)
+        self.assertTrue(ui.older('1.11.1',ui.PUBLIC_UPDATES));self.assertFalse(ui.older(ui.PUBLIC_UPDATES,ui.PUBLIC_UPDATES))
+        self.assertFalse(ui.older('1.12.0',ui.PUBLIC_UPDATES))
 
     def test_local_test_cannot_be_silently_enabled(self):
         with mock.patch.object(ui.private,'require_platform'),mock.patch.object(ui,'metadata',return_value={}):

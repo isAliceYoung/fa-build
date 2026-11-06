@@ -1,5 +1,9 @@
 # WebDesktop Public Bootstrap
 
+## WebDesktop 1.11.2
+
+When `isAliceYoung/fa` is public, installation skips Deploy Key authorization and reads the repository anonymously over HTTPS. The installer first asks GitHub for the branch with no credentials; only a public repository answers, and otherwise the Deploy Key is used as before. From 1.11.2 on, web updates do the same. Older versions installed this way still need the Deploy Key for web updates; the installer prints the key and says so. A local key is still created, because the installed signer must differ from it. The reviewed commits and file hashes still decide what is installed. Real VPS acceptance with a public repository remains **NOT RUN**.
+
 ## WebDesktop 1.11.1
 
 After each successful update, WebDesktop removes old program versions, their build files and older user data backups. It keeps the current and previous versions and the 2 newest user data backups. Database backups and the records of failed updates stay. A cleanup failure is logged and never fails the update. Cleanup starts with the update after 1.11.1 is installed. Real VPS acceptance remains **NOT RUN**.
@@ -47,13 +51,13 @@ install the script once with
 
 ## Optional automatic HTTPS domain binding
 
-After WebDesktop **1.11.1** and the Claude Desktop package are installed successfully, the root terminal asks `是否绑定域名[y/n]：`. Choose y, type your Cloudflare domain twice (both entries must match), choose whether to generate a random subdomain or type a full name one level under it (for example `a.example.com`), then enter the Cloudflare Account ID, the Zone ID of that domain, and the account API Token using hidden terminal input. The machine ID is read automatically. The private provisioner creates a separate Tunnel and random 24-hex subdomain for this VPS, binds it to `http://127.0.0.1:3000`, and verifies connector readiness, HTTPS health and unauthenticated API refusal before reporting success. Choosing n/Enter/EOF skips binding.
+After WebDesktop **1.11.2** and the Claude Desktop package are installed successfully, the root terminal asks `是否绑定域名[y/n]：`. Choose y, type your Cloudflare domain twice (both entries must match), choose whether to generate a random subdomain or type a full name one level under it (for example `a.example.com`), then enter the Cloudflare Account ID, the Zone ID of that domain, and the account API Token using hidden terminal input. The machine ID is read automatically. The private provisioner creates a separate Tunnel and random 24-hex subdomain for this VPS, binds it to `http://127.0.0.1:3000`, and verifies connector readiness, HTTPS health and unauthenticated API refusal before reporting success. Choosing n/Enter/EOF skips binding.
 
 The administrator explicitly authorizes temporary API Token use on the VPS. The token stays in process memory: no argv, environment, file or diagnostic-log token interface; no subprocess receives it. Core dumps are disabled and token references are dropped before package/service setup. Persistent root-only files contain only the dedicated per-VPS Tunnel credential, binding/provisioning state and IDs. The running connector never receives the account API Token. Do not put the token into a command, chat or repository.
 
 Use an API Token scoped to **Cloudflare Tunnel: Edit** for the intended account and **DNS: Edit** only for the domain you bind. The same account and existing zone reuse their Account ID and Zone ID across new VPS deployments; recheck after changing accounts or recreating/moving a zone. See [Cloudflare's ID guide](https://developers.cloudflare.com/fundamentals/account/find-account-and-zone-ids/).
 
-Automatic binding supports the fixed 1.11.1, 1.11.0, 1.10.3, 1.10.2, 1.10.1, 1.10.0, 1.9.0, 1.8.1, 1.8.0, 1.7.0, 1.6.0 and 1.5.0 application commits. Older versions and Beta are unchanged and skip this feature. `domain-maintenance.json` separately pins the private maintenance commit and all six helper hashes; the installer uses the existing isolated Deploy Key and verified GitHub host to obtain that exact code. The 1.9.0 entry is the default; all previously published tags and version mappings remain unchanged. This avoids substituting maintenance code for the signed installed application.
+Automatic binding supports the fixed 1.11.2, 1.11.1, 1.11.0, 1.10.3, 1.10.2, 1.10.1, 1.10.0, 1.9.0, 1.8.1, 1.8.0, 1.7.0, 1.6.0 and 1.5.0 application commits. Older versions and Beta are unchanged and skip this feature. `domain-maintenance.json` separately pins the private maintenance commit and all six helper hashes; the installer uses the existing isolated Deploy Key and verified GitHub host, or anonymous HTTPS when the repository is public, to obtain that exact code. The 1.9.0 entry is the default; all previously published tags and version mappings remain unchanged. This avoids substituting maintenance code for the signed installed application.
 
 After skipping or a reviewed recoverable binding failure, run the dedicated action from this **updated, reviewed** checkout:
 
@@ -91,6 +95,8 @@ If the clone completed and the SSH connection ended at the y/N prompt, do not cl
 bash /root/fa-build/install.sh
 ```
 
+When the `isAliceYoung/fa` repository is public, nothing has to be authorized: the installer and the 1.11.2 updater read it anonymously over HTTPS, and only a repository that answers without credentials is read this way. Otherwise the Deploy Key flow below applies unchanged.
+
 The current bootstrap reuses a locally validated key. Live authorization success skips the prompt; access denial shows the same public key and allows manual authorization again, then rechecks real read access. Broken/mismatched keys, host-key failures and network/branch errors stop without replacement or repair. y is not proof of authorization. Older bootstrap versions may require adding the existing key in GitHub before re-entry; its public half is `/root/.ssh/webdesktop-build-fa/deploy_key.pub`. Never delete or regenerate the key merely to get another prompt.
 
 Completed root-protected native/bootstrap/fresh installation records are recognized and the command exits with `ALREADY_INSTALLED`, without reinstalling, upgrading, changing credentials or claiming a new health-check pass. Partial/failed records still refuse automatic replay. Preparation stages retain their original bounded reuse policy; an interrupted build or native installation is not blindly restarted. Check `bootstrap.sh status` before any separately reviewed recovery.
@@ -105,6 +111,7 @@ After GitHub read authorization, the bootstrap fetches the latest official versi
 
 | Input | Fixed commit | Installer |
 | --- | --- | --- |
+| `1.11.2` | `370bc4125f3183a0014021ac96c78bdcf213d769` (`v1.11.2`) | Reads a public repository without the Deploy Key. |
 | `1.11.1` | `50cbbd1565cdb1f2d006b5b897f76e290ca956a4` (`v1.11.1`) | Automatic cleanup after a successful update. |
 | `1.11.0` | `1d00a22116e6fed1ecf199146ac52e1ab1bb7d83` (`v1.11.0`) | Web terminal runs Claude CLI with filtered network, 6-hour sessions and 4 terminals. |
 | `1.10.3` | `40a29d2cd1114c4362292bec030ff6eeb2cd72a0` (`v1.10.3`) | Optional direct connection without Cloudflare after domain binding. |
@@ -136,7 +143,7 @@ The Beta adapter reuses the existing pinned SSH source helper, then creates an o
 
 ## Interactive flow
 
-Run only as root on a separately authorized Debian 12 amd64 host with systemd/cgroup v2. Basic Git/Python/OpenSSH/CA tools are prepared when absent. On first key creation the script prints its actual checkout path, a per-host public Deploy Key, and https://github.com/isAliceYoung/fa/settings/keys. Add the public key in Deploy keys with **Allow write access disabled**. At `是否已完成 GitHub 授权？[y/N]:`, only y/Y proceeds. Empty input, n/N, EOF and invalid input exit safely.
+Run only as root on a separately authorized Debian 12 amd64 host with systemd/cgroup v2. Basic Git/Python/OpenSSH/CA tools are prepared when absent. When the `isAliceYoung/fa` repository is public, nothing has to be authorized: the installer and the 1.11.2 updater read it anonymously over HTTPS, and only a repository that answers without credentials is read this way. Otherwise the Deploy Key flow below applies unchanged. On first key creation the script prints its actual checkout path, a per-host public Deploy Key, and https://github.com/isAliceYoung/fa/settings/keys. Add the public key in Deploy keys with **Allow write access disabled**. At `是否已完成 GitHub 授权？[y/N]:`, only y/Y proceeds. Empty input, n/N, EOF and invalid input exit safely.
 
 Confirmation is not authentication: pinned GitHub SSH host verification, real repository read access, version-specific branch ancestry and exact commit checks follow. Stable versions use feature/CC; the original Beta uses main. Existing matching keys and clean exact checkouts are reused. Unknown or modified state is preserved and refused. Entrypoints and the source helper have pinned file hashes in release.json.
 

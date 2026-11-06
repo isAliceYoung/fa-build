@@ -25,6 +25,9 @@ SOURCES=Path('/opt/webdesktop-private-build/sources')
 CREDENTIALS=Path('/etc/webdesktop-isolated/login.json')
 CATALOGUE_URL='https://raw.githubusercontent.com/isAliceYoung/fa-build/main/release.json'
 _LOCAL_CATALOGUE=object()
+PUBLIC_URL='https://github.com/isAliceYoung/fa.git'
+# Older versions' own web updaters still read the repository through the Deploy Key.
+PUBLIC_UPDATES='1.11.2'
 INSTALL_RECORDS=(Path('/etc/webdesktop-isolated/state.json'),Path('/var/lib/webdesktop-bootstrap/state.json'),Path('/var/lib/webdesktop-fresh/state.json'))
 PASSWORD_COMMAND=Path('/usr/local/sbin/password.sh')
 
@@ -104,9 +107,48 @@ def verify_checkout(root=ROOT):
     return commit
 
 
+class PublicSource(private.PrivateSource):
+    """Anonymous HTTPS reads while the repository is public: no Deploy Key authorization.
+
+    private_repo.py is pinned by digest in every installed updater, so it stays unchanged.
+    The reviewed commits and file hashes, not the transport, decide what is installed.
+    """
+    def environment(self):
+        env=super().environment()
+        env.pop('GIT_SSH_COMMAND');env.pop('GIT_SSH_VARIANT')
+        env['GIT_ALLOW_PROTOCOL']='https'
+        return env
+
+    def git(self,*args):
+        return super().git(*(PUBLIC_URL if str(arg)==self.repo else arg for arg in args))
+
+
+_public=[]
+def public_repository():
+    """Asked once per run. No credentials are sent: only a public repository answers."""
+    if not _public:
+        try:PublicSource(KEYS,SOURCES/('0'*40),REPO,'feature/CC').authorized();_public.append(True)
+        except private.Failure:_public.append(False)
+    return _public[0]
+
+
+def reader(source):
+    """The same source, read over HTTPS when the repository is public."""
+    if isinstance(source,PublicSource) or not public_repository():return source
+    return PublicSource(source.state,source.source,source.repo,source.branch,source.commit)
+
+
 def authorize_source(source,read=input):
     """Reuse a validated key; re-enter manual authorization only on access denial."""
     existing=os.path.lexists(source.key) or os.path.lexists(source.key.with_suffix('.pub'))
+    if public_repository():
+        # The installed system still needs a local key: its signer must differ from it.
+        # It is never sent to GitHub here, so nothing has to be authorized.
+        if existing:
+            with source.locked():source.verify_local()
+        else:source.prepare()
+        print('[2/9] GitHub Deploy Key ... SKIPPED (fa 仓库是公开的，通过 HTTPS 读取，无需授权)')
+        return True
     if existing:
         with source.locked():
             source.verify_local()
@@ -197,6 +239,10 @@ def latest_catalogue(baseline):
     return value
 
 
+def older(version,than):
+    return tuple(map(int,version.split('.')))<tuple(map(int,than.split('.')))
+
+
 def select_version(catalogue,requested=None,read=input):
     print('可安装版本：'+', '.join(catalogue['versions']))
     if requested is not None:
@@ -282,13 +328,14 @@ def display_credentials(source, domain_url=None):
 
 
 def acquire(source):
+    source=reader(source)
     # A live permission check is mandatory even if a prior exact checkout exists.
     with source.locked():source.verify_local();source.authorized()
     if source.source.exists():
         source.directory(SOURCES,create=True)
         tools.require(not any(p.name.startswith('.auth-check-') for p in SOURCES.iterdir()),'RETAINED_AUTH_CHECK_REQUIRES_REVIEW')
         temp=Path(tempfile.mkdtemp(prefix='.auth-check-',dir=SOURCES))
-        check=private.PrivateSource(KEYS,temp/'source',REPO,source.branch,source.commit)
+        check=type(source)(KEYS,temp/'source',REPO,source.branch,source.commit)
         check.clone()
         # Only our successful temporary proof. Failed stages are intentionally retained.
         import shutil
@@ -311,6 +358,7 @@ def flow(a,catalogue,read=input):
     source=private.PrivateSource(KEYS,SOURCES/default['commit'],REPO,default['branch'],default['commit'])
     tools.diag.begin('authorization')
     if not authorize_source(source,read):return False
+    source=reader(source)
     catalogue=latest_catalogue(catalogue)
     catalogue=available_versions(catalogue,source)
     m=select_version(catalogue,getattr(a,'version',None),read)
@@ -318,7 +366,11 @@ def flow(a,catalogue,read=input):
     tools.require(not getattr(a,'domain_config',None) or m['engine']=='isolated','DOMAIN_BETA_NOT_SUPPORTED')
     tools.require(m['engine']!='legacy-beta' or a.mode=='local-test','BETA_REQUIRES_EXPLICIT_LEGACY_MODE')
     print('安装版本：'+m['version']+'；固定提交：'+m['commit'])
-    source=private.PrivateSource(KEYS,SOURCES/m['commit'],REPO,m['branch'],m['commit'])
+    source=reader(private.PrivateSource(KEYS,SOURCES/m['commit'],REPO,m['branch'],m['commit']))
+    if isinstance(source,PublicSource) and m['engine']=='isolated' and older(m['version'],PUBLIC_UPDATES):
+        print('注意：'+m['version']+' 的网页在线更新仍通过 Deploy Key 读取仓库。需要在线更新时，把下面的公钥添加到 '
+              'https://github.com/isAliceYoung/fa/settings/keys 的 Deploy keys（不勾选 Allow write access）；'+PUBLIC_UPDATES+' 及以后的版本不需要。\n'
+              +source.validate_identity())
     repo=acquire(source)
     print('[3/9] GitHub authorization ... PASS')
     import hashlib

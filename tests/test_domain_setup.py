@@ -16,6 +16,8 @@ def module(name,path):
     spec=importlib.util.spec_from_file_location(name,path);m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m);return m
 D=module('public_domain_test',BASE/'scripts/domain_setup.py')
 UI=module('domain_order_ui',BASE/'scripts/interactive.py')
+# Offline: these tests model a private repository unless a test says otherwise.
+UI._public[:]=[False]
 APP='a'*40;MAINTENANCE='b'*40
 URL='https://'+'c'*24+'.ourgoal.win'
 
@@ -24,12 +26,13 @@ class CurrentMetadata(unittest.TestCase):
     def test_published_domain_metadata_matches_registered_immutable_release(self):
         value=D.metadata(UI.tools)
         catalogue=UI.metadata()
-        self.assertEqual(set(value['supported_versions']),{'1.5.0','1.6.0','1.7.0','1.8.0','1.8.1','1.9.0','1.10.0','1.10.1','1.10.2','1.10.3','1.11.0','1.11.1'})
+        self.assertEqual(set(value['supported_versions']),{'1.5.0','1.6.0','1.7.0','1.8.0','1.8.1','1.9.0','1.10.0','1.10.1','1.10.2','1.10.3','1.11.0','1.11.1','1.11.2'})
         for version, commit in value['supported_versions'].items():
             self.assertEqual(commit,catalogue['versions'][version]['commit'])
-        # The domain code may move ahead of the latest release: 32d2854 lets binding use any Cloudflare domain and drop an unfinished one.
-        self.assertEqual(value['commit'],'32d2854452f9a9c85d6e35adde604d0bc9c95935')
-        self.assertNotIn(value['commit'],value['supported_versions'].values())
+        # 1.11.2 carries the domain code of 32d2854 (any Cloudflare domain, dropping an unfinished job).
+        self.assertEqual(value['commit'],'370bc4125f3183a0014021ac96c78bdcf213d769')
+        self.assertEqual(value['commit'],value['supported_versions']['1.11.2'])
+        self.assertNotEqual(value['commit'],value['supported_versions']['1.11.1'])
         self.assertNotEqual(value['commit'],value['supported_versions']['1.8.1'])
         self.assertNotEqual(value['commit'],value['supported_versions']['1.8.0'])
         self.assertNotEqual(value['commit'],value['supported_versions']['1.7.0'])
