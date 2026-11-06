@@ -42,7 +42,7 @@ try:
     if os.path.lexists(domain):
         state = read_config(domain)
         host = state.get('hostname')
-        if not isinstance(host, str) or not re.fullmatch(r'[0-9a-f]{24}\.ourgoal\.win', host):
+        if not isinstance(host, str) or not re.fullmatch(r'(?=[a-z0-9.-]{4,253}\Z)[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+\.(?:[a-z]{2,63}|xn--[a-z0-9-]{1,59})', host):
             raise ValueError('Invalid saved hostname')
         url = 'https://' + host
     print('桌面网址：' + url)

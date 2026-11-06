@@ -11,6 +11,7 @@ KEYS = Path('/root/.ssh/webdesktop-build-fa')
 SOURCES = Path('/opt/webdesktop-private-build/sources')
 NATIVE = Path('/etc/webdesktop-isolated/state.json')
 ENTRY = 'webdesktop-deploy/scripts/domain_interactive.py'
+URL = re.compile(r'https://(?=[a-z0-9.-]{4,253})[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+\.(?:[a-z]{2,63}|xn--[a-z0-9-]{1,59})')
 MODULES = {ENTRY, *('webdesktop-deploy/scripts/' + name for name in (
     'domain_attach.py', 'domain_install.py', 'domain_contract.py', 'cloudflare_domain.py', 'deploy_diagnostics.py'))}
 
@@ -38,11 +39,12 @@ def metadata(tools):
 
 
 def consent(read):
-    try: answer = read('是否绑定域名？[y/N]：').strip()
-    except EOFError: return False
-    if answer in ('y','Y'): return True
-    if answer not in ('','n','N'): print('输入无效；跳过域名绑定。')
-    return False
+    while True:
+        try: answer = read('是否绑定域名[y/n]：').strip()
+        except EOFError: return False
+        if answer in ('y','Y'): return True
+        if answer in ('','n','N'): return False
+        print('请输入 y 或 n。')
 
 
 def offer(tools, private, acquire, read=input, expected_commit=None):
@@ -62,11 +64,20 @@ def offer(tools, private, acquire, read=input, expected_commit=None):
         print('当前安装版本尚未登记自动域名绑定支持；桌面安装已完成。')
         return None
     tools.require(state.get('bind_host') == '127.0.0.1', 'DOMAIN_PUBLIC_LISTENER_REFUSED')
-    print('可绑定随机 ourgoal.win 子域名。绑定会短暂重启桌面后端，请先保存未提交的操作。')
+    print('可绑定一个在 Cloudflare 托管的域名，子域名可随机生成或自己填写。绑定会短暂重启桌面后端，请先保存未提交的操作。')
+    print('选择 y 后，随时按 Ctrl+C 可跳过域名绑定，安装继续进行。')
     print('选择 y 后在 root 终端隐藏输入 Cloudflare API Token；仅在内存使用，不保存到文件或日志。')
     if not consent(read):
         print('已跳过域名绑定；稍后可运行：bash /root/fa-build/install.sh domain')
         return None
+    try: return bind(tools, value, checker, acquire, read, commit)
+    except KeyboardInterrupt:
+        # Anything already created on Cloudflare is recorded; `install.sh domain` resumes it.
+        print('\n已跳过域名绑定；桌面安装和用户数据保留。稍后可运行：bash /root/fa-build/install.sh domain', flush=True)
+        return None
+
+
+def bind(tools, value, checker, acquire, read, commit):
     tools.diag.begin('domain-binding')
     repo = acquire(checker)
     tools.require(Path(repo) == checker.source, 'PINNED_SOURCE_MODULE_DIGEST_MISMATCH')
@@ -81,6 +92,6 @@ def offer(tools, private, acquire, read=input, expected_commit=None):
         print('已取消域名绑定；桌面安装和用户数据保留。')
         return None
     tools.require(isinstance(result,dict) and result.get('phase') == 'ready' and isinstance(result.get('url'),str)
-                  and re.fullmatch(r'https://[0-9a-f]{24}\.ourgoal\.win',result['url']), 'DOMAIN_BIND_FAILED')
+                  and URL.fullmatch(result['url']) is not None, 'DOMAIN_BIND_FAILED')
     print('域名绑定成功：' + result['url'])
     return result['url']

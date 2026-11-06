@@ -2,14 +2,14 @@
   "schema": 1,
   "repository": "git@github.com:isAliceYoung/fa.git",
   "branch": "feature/CC",
-  "commit": "50cbbd1565cdb1f2d006b5b897f76e290ca956a4",
+  "commit": "0cffa34855ad1028cd8a7c4023deea2219cee2a8",
   "entrypoint": "webdesktop-deploy/scripts/domain_interactive.py",
   "files": {
-    "webdesktop-deploy/scripts/domain_interactive.py": "0f00222284b0ac827fc22546195c26f37aef493871f12a12826a73e0b03aa8c2",
+    "webdesktop-deploy/scripts/domain_interactive.py": "a2466ccc34768b32fb253b6297f3a3cd80f3704f9ea45121f4d4db1b84a022db",
     "webdesktop-deploy/scripts/domain_attach.py": "56dc4eb99934186ec651ac0a8961f8e0818a44a26629f80b588997e0c367bb88",
     "webdesktop-deploy/scripts/domain_install.py": "0c392ac617152bb6994ff29d99f5314cf0b8c97c3dedadc12fd7a2cb0ec10beb",
-    "webdesktop-deploy/scripts/domain_contract.py": "1d67c3b27af204ee32dc027407b9bdec5cc95f4297f7cabfb11d9275b02c1cdf",
-    "webdesktop-deploy/scripts/cloudflare_domain.py": "d29fcf97cc2f6af67ba9fe9b30fc662f74d1f2a2b582ef7be5813a0660d432e1",
+    "webdesktop-deploy/scripts/domain_contract.py": "beff48455fa4c4e4b461e01248dade60a1ad73aa2c0de43b96892cee59a47c19",
+    "webdesktop-deploy/scripts/cloudflare_domain.py": "6f7b38d19f735baa3c03561d3662aa759317f1f83460cc1ce3faa6a148612528",
     "webdesktop-deploy/scripts/deploy_diagnostics.py": "dd926c3c6161e78e69564d368375b0f4a058abe7ecae8fe872fdff676aa57af0"
   },
   "supported_versions": {

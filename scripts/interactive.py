@@ -255,7 +255,7 @@ def display_credentials(source, domain_url=None):
         return False
     with os.fdopen(fd,'w',encoding='utf-8') as terminal:
         if domain_url is not None:
-            tools.require(isinstance(domain_url,str) and re.fullmatch(r'https://[0-9a-f]{24}\.ourgoal\.win',domain_url),'DOMAIN_HOSTNAME')
+            tools.require(isinstance(domain_url,str) and re.fullmatch(r'https://(?=[a-z0-9.-]{4,253})[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+\.(?:[a-z]{2,63}|xn--[a-z0-9-]{1,59})',domain_url),'DOMAIN_HOSTNAME')
             # Show the user handoff only on the administrator's TTY, never in
             # stdout, build output or persistent deployment diagnostics.
             secret_fd=os.open(CREDENTIALS,os.O_RDONLY|os.O_NOFOLLOW|os.O_CLOEXEC)

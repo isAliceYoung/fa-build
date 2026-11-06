@@ -27,8 +27,9 @@ class CurrentMetadata(unittest.TestCase):
         self.assertEqual(set(value['supported_versions']),{'1.5.0','1.6.0','1.7.0','1.8.0','1.8.1','1.9.0','1.10.0','1.10.1','1.10.2','1.10.3','1.11.0','1.11.1'})
         for version, commit in value['supported_versions'].items():
             self.assertEqual(commit,catalogue['versions'][version]['commit'])
-        self.assertEqual(value['commit'],value['supported_versions']['1.11.1'])
-        self.assertNotEqual(value['commit'],value['supported_versions']['1.11.0'])
+        # The domain code may move ahead of the latest release: 0cffa34 lets binding use any Cloudflare domain.
+        self.assertEqual(value['commit'],'0cffa34855ad1028cd8a7c4023deea2219cee2a8')
+        self.assertNotIn(value['commit'],value['supported_versions'].values())
         self.assertNotEqual(value['commit'],value['supported_versions']['1.8.1'])
         self.assertNotEqual(value['commit'],value['supported_versions']['1.8.0'])
         self.assertNotEqual(value['commit'],value['supported_versions']['1.7.0'])
@@ -68,13 +69,15 @@ class PublicDomain(unittest.TestCase):
     def save(self): (self.root/'domain-maintenance.json').write_text(json.dumps(self.value))
 
     def offer(self,answer='y',**kwargs):
-        self.output=io.StringIO()
+        self.output=io.StringIO();answers=iter(answer if isinstance(answer,list) else [answer])
         with contextlib.redirect_stdout(self.output):
-            return D.offer(self.tools,self.private,self.acquire,read=lambda _:answer,expected_commit=APP,**kwargs)
+            return D.offer(self.tools,self.private,self.acquire,read=lambda _:next(answers),expected_commit=APP,**kwargs)
 
     def test_only_explicit_y_can_acquire_private_maintenance_code(self):
-        for answer in ('n','N','','yes','invalid'):
+        for answer in ('n','N',''):
             with self.subTest(answer=answer):self.assertIsNone(self.offer(answer))
+        for answers in (['yes','n'],['invalid','maybe','N']):
+            with self.subTest(answers=answers):self.assertIsNone(self.offer(answers));self.assertIn('请输入 y 或 n',self.output.getvalue())
         self.acquire.assert_not_called()
         self.assertEqual(self.offer('Y'),URL)
         self.acquire.assert_called_once()
@@ -125,8 +128,26 @@ class PublicDomain(unittest.TestCase):
             self.assertIsNone(D.offer(self.tools,self.private,self.acquire,read=Mock(side_effect=AssertionError('must not prompt'))))
         self.acquire.assert_not_called()
 
+    def test_any_domain_one_level_deep_is_reported(self):
+        for url in ('https://desk.example.com','https://a-1.example.co.uk','https://'+'c'*24+'.example.xn--fiqs8s'):
+            self.bodies[D.ENTRY]=('def setup(*args,**kwargs):return '+repr(dict(phase='ready',url=url))).encode()
+            self.value['files'][D.ENTRY]=hashlib.sha256(self.bodies[D.ENTRY]).hexdigest();self.save()
+            with self.subTest(url=url):self.assertEqual(self.offer(),url)
+
+    def test_ctrl_c_after_y_skips_binding_and_keeps_going(self):
+        for where in ('fetch','setup'):
+            if where=='fetch':self.acquire.side_effect=KeyboardInterrupt
+            else:
+                self.acquire.side_effect=None;self.acquire.return_value=self.source
+                self.bodies[D.ENTRY]=b'def setup(*args,**kwargs):raise KeyboardInterrupt\n'
+                self.value['files'][D.ENTRY]=hashlib.sha256(self.bodies[D.ENTRY]).hexdigest();self.save()
+                for name,raw in self.bodies.items():
+                    path=self.source/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(raw)
+            with self.subTest(where=where):
+                self.assertIsNone(self.offer());self.assertIn('已跳过域名绑定',self.output.getvalue());self.assertNotIn('域名绑定成功',self.output.getvalue())
+
     def test_nonready_or_unexpected_url_never_reported_as_success(self):
-        for phase,url in [('pending-review',URL),('ready','https://evil.invalid')]:
+        for phase,url in [('pending-review',URL),('ready','https://evil.invalid'),('ready','https://example.com'),('ready','https://desk.example.com/path'),('ready','http://desk.example.com'),('ready','https://desk.example.com:8443')]:
             self.bodies[D.ENTRY]=('def setup(*args,**kwargs):return '+repr(dict(phase=phase,url=url))).encode()
             self.value['files'][D.ENTRY]=hashlib.sha256(self.bodies[D.ENTRY]).hexdigest();self.save()
             with self.subTest(phase=phase,url=url),self.assertRaisesRegex(ValueError,'DOMAIN_BIND_FAILED'):self.offer()
