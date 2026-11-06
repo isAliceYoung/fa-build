@@ -42,6 +42,9 @@ def consent(read):
     while True:
         try: answer = read('是否绑定域名[y/n]：').strip()
         except EOFError: return False
+        except KeyboardInterrupt:
+            # Ctrl+C here means no, like after y: the installation continues.
+            print(flush=True); return False
         if answer in ('y','Y'): return True
         if answer in ('','n','N'): return False
         print('请输入 y 或 n。')

@@ -27,8 +27,8 @@ class CurrentMetadata(unittest.TestCase):
         self.assertEqual(set(value['supported_versions']),{'1.5.0','1.6.0','1.7.0','1.8.0','1.8.1','1.9.0','1.10.0','1.10.1','1.10.2','1.10.3','1.11.0','1.11.1'})
         for version, commit in value['supported_versions'].items():
             self.assertEqual(commit,catalogue['versions'][version]['commit'])
-        # The domain code may move ahead of the latest release: 0cffa34 lets binding use any Cloudflare domain.
-        self.assertEqual(value['commit'],'0cffa34855ad1028cd8a7c4023deea2219cee2a8')
+        # The domain code may move ahead of the latest release: 32d2854 lets binding use any Cloudflare domain and drop an unfinished one.
+        self.assertEqual(value['commit'],'32d2854452f9a9c85d6e35adde604d0bc9c95935')
         self.assertNotIn(value['commit'],value['supported_versions'].values())
         self.assertNotEqual(value['commit'],value['supported_versions']['1.8.1'])
         self.assertNotEqual(value['commit'],value['supported_versions']['1.8.0'])
@@ -133,6 +133,13 @@ class PublicDomain(unittest.TestCase):
             self.bodies[D.ENTRY]=('def setup(*args,**kwargs):return '+repr(dict(phase='ready',url=url))).encode()
             self.value['files'][D.ENTRY]=hashlib.sha256(self.bodies[D.ENTRY]).hexdigest();self.save()
             with self.subTest(url=url):self.assertEqual(self.offer(),url)
+
+    def test_ctrl_c_at_the_first_question_skips_binding_and_keeps_going(self):
+        def interrupted(prompt):raise KeyboardInterrupt
+        self.output=io.StringIO()
+        with contextlib.redirect_stdout(self.output):
+            self.assertIsNone(D.offer(self.tools,self.private,self.acquire,read=interrupted,expected_commit=APP))
+        self.assertIn('已跳过域名绑定',self.output.getvalue());self.acquire.assert_not_called()
 
     def test_ctrl_c_after_y_skips_binding_and_keeps_going(self):
         for where in ('fetch','setup'):
