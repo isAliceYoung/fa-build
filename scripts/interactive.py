@@ -28,6 +28,9 @@ _LOCAL_CATALOGUE=object()
 PUBLIC_URL='https://github.com/isAliceYoung/fa.git'
 # Older versions' own web updaters still read the repository through the Deploy Key.
 PUBLIC_UPDATES='1.11.2'
+# Test releases awaiting a real VPS run: listed with a warning, never the default.
+TEST_VERSIONS={'1.12.0'}
+TEST_LABEL='（测试版，请勿安装）'
 INSTALL_RECORDS=(Path('/etc/webdesktop-isolated/state.json'),Path('/var/lib/webdesktop-bootstrap/state.json'),Path('/var/lib/webdesktop-fresh/state.json'))
 PASSWORD_COMMAND=Path('/usr/local/sbin/password.sh')
 
@@ -244,7 +247,7 @@ def older(version,than):
 
 
 def select_version(catalogue,requested=None,read=input):
-    print('可安装版本：'+', '.join(catalogue['versions']))
+    print('可安装版本：'+', '.join(v+(TEST_LABEL if v in TEST_VERSIONS else '') for v in catalogue['versions']))
     if requested is not None:
         tools.require(requested in catalogue['versions'],'UNKNOWN_INSTALL_VERSION')
         return dict(catalogue['versions'][requested],version=requested)
@@ -281,7 +284,8 @@ def available_versions(catalogue,source):
         beta=version.startswith('beta')
         return (not beta,tuple(map(int,(version[4:] if beta else version).split('.'))))
     versions={version:versions[version] for version in sorted(versions,key=order,reverse=True)}
-    default=catalogue['default_version'] if catalogue['default_version'] in versions else next(iter(versions))
+    stable=[v for v in versions if v not in TEST_VERSIONS] or list(versions)
+    default=catalogue['default_version'] if catalogue['default_version'] in versions else stable[0]
     print('已核验私有仓库版本标签；仅显示已登记且提交匹配的版本。')
     return dict(catalogue,versions=versions,default_version=default)
 
@@ -414,7 +418,7 @@ def flow(a,catalogue,read=input):
 
 def main(argv=None):
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument('action',choices=('run','status','resume','domain','cli'),nargs='?',default='run')
+    p.add_argument('action',choices=('run','status','resume','domain','cli','cloudcli','cloudcli-domain'),nargs='?',default='run')
     p.add_argument('--mode',choices=('formal','local-test'),default='formal')
     p.add_argument('--ack-local-test-trust',action='store_true');p.add_argument('--authorize-install',action='store_true')
     p.add_argument('--authorize-isolated-egress',action='store_true')
@@ -441,6 +445,11 @@ def main(argv=None):
     if a.action=='cli':
         tools.require(reuse_installation(),'EXISTING_INSTALLATION')
         load('public_claude_cli',HERE/'claude_cli.py').install(tools)
+        return
+    if a.action in ('cloudcli','cloudcli-domain'):
+        # CloudCLI UI (Claude 网页版) uses the Claude CLI that `install.sh cli` installs.
+        tools.require(reuse_installation(),'EXISTING_INSTALLATION')
+        load('public_cloudcli_setup',HERE/'cloudcli_setup.py').run(tools,private,acquire,hostname_only=a.action=='cloudcli-domain')
         return
     if reuse_installation():return
     print('Trust mode: '+('LOCAL_TEST_TRUST (NOT independent release trust)' if a.mode=='local-test' else 'FORMAL (independent signed package required)'))

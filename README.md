@@ -1,5 +1,17 @@
 # WebDesktop Public Bootstrap
 
+## WebDesktop 1.12.0（测试版，请勿更新）
+
+**测试版，请勿安装或更新。This is a TEST release.** It stays listed only so it can be tried on a real VPS; new installations still default to 1.11.2, and the version list marks it `（测试版，请勿安装）`. Existing desktops see 1.12.0 in Settings because the web updater offers the newest registered version, but nothing installs it until someone presses update, and automatic updates stay off.
+
+1.12.0 adds **Claude 网页版**: CloudCLI UI (https://github.com/siteboon/claudecodeui, AGPL-3.0-or-later; a modified version, Claude only, with its terminal, file browser and Git panel) on its own origin. After updating the desktop to 1.12.0, update the local checkout with `git -C /root/fa-build -c core.hooksPath=/dev/null -c core.fsmonitor=false pull --ff-only`, then run as root:
+
+```bash
+bash /root/fa-build/install.sh cloudcli
+```
+
+It builds the pinned upstream commit with the WebDesktop patch from the reviewed fa commit in `cloudcli-maintenance.json` (every file checked by SHA-256 first), runs it as the terminal user inside the terminal sandbox, and puts a **Claude 网页版** icon on the desktop. The icon opens it with a one-time ticket. Without a domain it is at `http://127.0.0.1:3001` (forward port 3001 with SSH like port 3000); with a bound domain, `install.sh cloudcli` (or later `install.sh cloudcli-domain`) asks for a temporary Cloudflare token and adds `<name>-claude.<zone>` to the same tunnel. The token is read hidden and never saved. Domain binding for 1.12.0 itself is not supported yet. Real VPS and real Cloudflare acceptance remain **NOT RUN**.
+
 ## WebDesktop 1.11.2
 
 When `isAliceYoung/fa` is public, installation skips Deploy Key authorization and reads the repository anonymously over HTTPS. The installer first asks GitHub for the branch with no credentials; only a public repository answers, and otherwise the Deploy Key is used as before. From 1.11.2 on, web updates do the same. Older versions installed this way still need the Deploy Key for web updates; the installer prints the key and says so. A local key is still created, because the installed signer must differ from it. The reviewed commits and file hashes still decide what is installed. Real VPS acceptance with a public repository remains **NOT RUN**.
@@ -117,6 +129,7 @@ After GitHub read authorization, the bootstrap fetches the latest official versi
 
 | Input | Fixed commit | Installer |
 | --- | --- | --- |
+| `1.12.0` | `6c3af5df4792c4047e453caa95ae519522e4435d` (`v1.12.0`) | **测试版，请勿安装。** Claude 网页版 (CloudCLI UI); not the default. |
 | `1.11.2` | `370bc4125f3183a0014021ac96c78bdcf213d769` (`v1.11.2`) | Reads a public repository without the Deploy Key. |
 | `1.11.1` | `50cbbd1565cdb1f2d006b5b897f76e290ca956a4` (`v1.11.1`) | Automatic cleanup after a successful update. |
 | `1.11.0` | `1d00a22116e6fed1ecf199146ac52e1ab1bb7d83` (`v1.11.0`) | Web terminal runs Claude CLI with filtered network, 6-hour sessions and 4 terminals. |
