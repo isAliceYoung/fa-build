@@ -11,6 +11,7 @@
     "webdesktop-deploy/cloudcli/cloudcli.patch": "a3c56dd894ebf02552ae17d1d1eb81a0e93f34af0afff1c40b56a0650206828e"
   },
   "supported_versions": {
+    "2.0.0": "a3dae3f95ffcb5260f35411584f60df746947177",
     "1.12.1": "867f93378b025143ce66ba139ad76c74de490391"
   }
 }

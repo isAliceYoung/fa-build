@@ -1,5 +1,9 @@
 # WebDesktop Public Bootstrap
 
+## WebDesktop 2.0.0
+
+2.0.0 is the stable release of **Claude 网页版** (CloudCLI UI) and the default for new installations. The one-click installation asks `是否安装 Claude 网页版[y/n]：` after the Claude CLI and domain binding; on an installed VPS, update to 2.0.0 in Settings, update the local checkout with `git -C /root/fa-build -c core.hooksPath=/dev/null -c core.fsmonitor=false pull --ff-only`, then run `bash /root/fa-build/install.sh cloudcli`. CMCP 4.18.0 can open it directly. Domain binding supports 2.0.0. The section below describes the feature, first published as the 1.12.1 test release.
+
 ## WebDesktop 1.12.1（测试版，请勿更新）
 
 **测试版，请勿安装或更新。This is a TEST release.** It stays listed only so it can be tried on a real VPS; new installations still default to 1.11.2, and the version list marks it `（测试版，请勿安装）`. Existing desktops see 1.12.1 in Settings because the web updater offers the newest registered version, but nothing installs it until someone presses update, and automatic updates stay off. 1.12.1 replaces 1.12.0, which was withdrawn from the list because it did not start after a web update.
@@ -77,7 +81,7 @@ The administrator explicitly authorizes temporary API Token use on the VPS. The 
 
 Use an API Token scoped to **Cloudflare Tunnel: Edit** for the intended account and **DNS: Edit** only for the domain you bind. The same account and existing zone reuse their Account ID and Zone ID across new VPS deployments; recheck after changing accounts or recreating/moving a zone. See [Cloudflare's ID guide](https://developers.cloudflare.com/fundamentals/account/find-account-and-zone-ids/).
 
-Automatic binding supports the fixed 1.12.1, 1.11.2, 1.11.1, 1.11.0, 1.10.3, 1.10.2, 1.10.1, 1.10.0, 1.9.0, 1.8.1, 1.8.0, 1.7.0, 1.6.0 and 1.5.0 application commits. Older versions and Beta are unchanged and skip this feature. `domain-maintenance.json` separately pins the private maintenance commit and all six helper hashes; the installer uses the existing isolated Deploy Key and verified GitHub host, or anonymous HTTPS when the repository is public, to obtain that exact code. The 1.9.0 entry is the default; all previously published tags and version mappings remain unchanged. This avoids substituting maintenance code for the signed installed application.
+Automatic binding supports the fixed 2.0.0, 1.12.1, 1.11.2, 1.11.1, 1.11.0, 1.10.3, 1.10.2, 1.10.1, 1.10.0, 1.9.0, 1.8.1, 1.8.0, 1.7.0, 1.6.0 and 1.5.0 application commits. Older versions and Beta are unchanged and skip this feature. `domain-maintenance.json` separately pins the private maintenance commit and all six helper hashes; the installer uses the existing isolated Deploy Key and verified GitHub host, or anonymous HTTPS when the repository is public, to obtain that exact code. The 1.9.0 entry is the default; all previously published tags and version mappings remain unchanged. This avoids substituting maintenance code for the signed installed application.
 
 After skipping or a reviewed recoverable binding failure, run the dedicated action from this **updated, reviewed** checkout:
 
@@ -131,6 +135,7 @@ After GitHub read authorization, the bootstrap fetches the latest official versi
 
 | Input | Fixed commit | Installer |
 | --- | --- | --- |
+| `2.0.0` | `a3dae3f95ffcb5260f35411584f60df746947177` (`v2.0.0`) | Claude 网页版 (CloudCLI UI), offered by the one-click installation; CMCP 4.18.0 sign-in. Default. |
 | `1.12.1` | `867f93378b025143ce66ba139ad76c74de490391` (`v1.12.1`) | **测试版，请勿安装。** Claude 网页版 (CloudCLI UI); not the default. |
 | `1.11.2` | `370bc4125f3183a0014021ac96c78bdcf213d769` (`v1.11.2`) | Reads a public repository without the Deploy Key. |
 | `1.11.1` | `50cbbd1565cdb1f2d006b5b897f76e290ca956a4` (`v1.11.1`) | Automatic cleanup after a successful update. |

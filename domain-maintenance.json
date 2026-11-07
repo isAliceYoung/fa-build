@@ -13,6 +13,7 @@
     "webdesktop-deploy/scripts/deploy_diagnostics.py": "dd926c3c6161e78e69564d368375b0f4a058abe7ecae8fe872fdff676aa57af0"
   },
   "supported_versions": {
+    "2.0.0": "a3dae3f95ffcb5260f35411584f60df746947177",
     "1.12.1": "867f93378b025143ce66ba139ad76c74de490391",
     "1.11.2": "370bc4125f3183a0014021ac96c78bdcf213d769",
     "1.11.1": "50cbbd1565cdb1f2d006b5b897f76e290ca956a4",
