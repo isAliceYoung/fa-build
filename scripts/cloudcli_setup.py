@@ -66,8 +66,15 @@ def run(tools, private, acquire, hostname_only=False):
         tools.require(hashlib.sha256(path.read_bytes()).hexdigest() == expected, 'PINNED_SOURCE_MODULE_DIGEST_MISMATCH')
     spec = importlib.util.spec_from_file_location('approved_cloudcli_install', repo/ENTRY)
     module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
-    if hostname_only:
-        tools.require(module.CONFIG.exists(), 'CLOUDCLI_NOT_INSTALLED')
-        module.offer_hostname()
-    else: module.install()
+    try:
+        if hostname_only:
+            tools.require(module.CONFIG.exists(), 'CLOUDCLI_NOT_INSTALLED')
+            module.offer_hostname()
+        else: module.install()
+    except ValueError as error:
+        # The diagnostics below only say "Python value error"; the pinned code's own code is shown here.
+        code = str(error)
+        if not getattr(error, 'reported', False) and re.fullmatch('[A-Z][A-Z0-9_]{2,63}', code):
+            print('CloudCLI UI ... FAILED: ' + code, flush=True)
+        raise
     return True

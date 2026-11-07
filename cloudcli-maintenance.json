@@ -2,10 +2,10 @@
   "schema": 1,
   "repository": "git@github.com:isAliceYoung/fa.git",
   "branch": "feature/CC",
-  "commit": "867f93378b025143ce66ba139ad76c74de490391",
+  "commit": "afbbeeba223c530a7c9a9cdcd1cb13209d116f7e",
   "entrypoint": "webdesktop-deploy/scripts/cloudcli_install.py",
   "files": {
-    "webdesktop-deploy/scripts/cloudcli_install.py": "93c06600cb4f811e2de655fbd15943e715720ae952a4f3872065db38849cd1c3",
+    "webdesktop-deploy/scripts/cloudcli_install.py": "3a8372bfcf916337419994706cd7b52f5eecdf04822a623e4feccea12bfdb7e1",
     "webdesktop-deploy/scripts/cloudflare_domain.py": "2eb6fefa248f5c875c7c5a12213413c4f32bb7efed5cbec27e204ecc4b49035e",
     "webdesktop-deploy/scripts/domain_contract.py": "beff48455fa4c4e4b461e01248dade60a1ad73aa2c0de43b96892cee59a47c19",
     "webdesktop-deploy/cloudcli/cloudcli.patch": "a3c56dd894ebf02552ae17d1d1eb81a0e93f34af0afff1c40b56a0650206828e"

@@ -85,6 +85,16 @@ class CloudcliSetup(unittest.TestCase):
         self.assertTrue(self.run_setup(hostname_only=True))
         self.assertEqual(self.loaded.CALLS, ['hostname'])
 
+    def test_a_failure_of_the_pinned_code_shows_its_code_once(self):
+        self.bodies[S.ENTRY] += (b'def offer_hostname(): raise ValueError("CF_DNS_HOSTNAME_TAKEN")\n'
+                                 b'def install():\n    e = ValueError("CLOUDCLI_DISK_REQUIRED"); print("FAILED: CLOUDCLI_DISK_REQUIRED"); e.reported = True; raise e\n')
+        self.value['files'][S.ENTRY] = hashlib.sha256(self.bodies[S.ENTRY]).hexdigest(); self.save()
+        (self.root/'entry.json').write_text('{}')
+        with self.assertRaisesRegex(ValueError, 'CF_DNS_HOSTNAME_TAKEN'): self.run_setup(hostname_only=True)
+        self.assertIn('CloudCLI UI ... FAILED: CF_DNS_HOSTNAME_TAKEN', self.output.getvalue())
+        with self.assertRaisesRegex(ValueError, 'CLOUDCLI_DISK_REQUIRED'): self.run_setup()
+        self.assertEqual(self.output.getvalue().count('FAILED: CLOUDCLI_DISK_REQUIRED'), 1)
+
     def test_a_public_listener_or_unfinished_desktop_is_refused(self):
         for change in ({'bind_host': '0.0.0.0'}, {'phase': 'installing'}, {'branch': 'main'}):
             with self.subTest(change=change):
