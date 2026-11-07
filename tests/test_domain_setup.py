@@ -200,6 +200,7 @@ class InstallOrder(unittest.TestCase):
              patch.object(UI,'available_versions',return_value=catalogue),patch.object(UI,'select_version',return_value=version), \
              patch.object(UI,'acquire',return_value=root),patch.object(UI,'load',side_effect=load), \
              patch.object(UI,'post_install_domain',side_effect=domain), \
+             patch.object(UI,'post_install_cloudcli',side_effect=lambda *args:events.append('cloudcli')), \
              patch.object(UI,'display_credentials',side_effect=lambda *args:events.append('credentials')), \
              contextlib.redirect_stdout(io.StringIO()),contextlib.redirect_stderr(io.StringIO()):
             if claude_error or domain_error or launcher_error:
@@ -208,22 +209,32 @@ class InstallOrder(unittest.TestCase):
         return events
 
     def test_a_failed_cli_install_never_blocks_the_desktop_or_binding(self):
-        self.assertEqual(self.flow(cli_error=True),['desktop','claude','cli','domain','credentials'])
+        self.assertEqual(self.flow(cli_error=True),['desktop','claude','cli','domain','cloudcli','credentials'])
 
     def test_binding_prompt_follows_successful_desktop_and_claude(self):
-        self.assertEqual(self.flow(),['desktop','claude','cli','domain','credentials'])
+        self.assertEqual(self.flow(),['desktop','claude','cli','domain','cloudcli','credentials'])
 
     def test_claude_failure_does_not_begin_binding(self):
         self.assertEqual(self.flow(claude_error=True),['desktop','claude','credentials'])
 
     def test_supported_release_registers_launcher_after_package_and_before_binding(self):
-        self.assertEqual(self.flow(launcher=True),['desktop','claude','launcher','cli','domain','credentials'])
+        self.assertEqual(self.flow(launcher=True),['desktop','claude','launcher','cli','domain','cloudcli','credentials'])
 
     def test_launcher_failure_preserves_desktop_and_credentials_without_binding(self):
         self.assertEqual(self.flow(launcher=True,launcher_error=True),['desktop','claude','launcher','credentials'])
 
     def test_domain_failure_keeps_access_to_initial_credentials(self):
         self.assertEqual(self.flow(domain_error=True),['desktop','claude','cli','domain','credentials'])
+
+    def test_a_failed_or_interrupted_cloudcli_install_never_fails_the_installation(self):
+        for error in (ValueError('CLOUDCLI_DISK_REQUIRED'), KeyboardInterrupt()):
+            with self.subTest(error=type(error).__name__):
+                component=types.SimpleNamespace(offer=Mock(side_effect=error))
+                with patch.object(UI,'load',return_value=component),patch.object(UI.tools.diag,'report'), \
+                     contextlib.redirect_stdout(io.StringIO()) as output:
+                    UI.post_install_cloudcli(types.SimpleNamespace(commit='a'*40),read=lambda _:'y')
+                self.assertIn('install.sh cloudcli',output.getvalue())
+                self.assertEqual(component.offer.call_args.kwargs['expected_commit'],'a'*40)
 
     def test_existing_domain_handoff_does_not_trigger_second_prompt(self):
         args=types.SimpleNamespace(domain_url=URL)

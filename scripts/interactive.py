@@ -353,6 +353,16 @@ def post_install_domain(a,read=input):
     component=load('public_domain_setup',HERE/'domain_setup.py')
     return component.offer(tools,private,acquire,read=read,expected_commit=getattr(a,'commit',None))
 
+def post_install_cloudcli(a,read=input):
+    """Optional Claude 网页版 after the desktop, the CLI and domain binding; never fails the installation."""
+    try:
+        load('public_cloudcli_setup',HERE/'cloudcli_setup.py').offer(tools,private,acquire,read=read,expected_commit=getattr(a,'commit',None))
+    except KeyboardInterrupt:
+        print('\n已中断 Claude 网页版安装；桌面不受影响。稍后可运行：bash /root/fa-build/install.sh cloudcli',flush=True)
+    except Exception as error:
+        tools.diag.report(error,'cloudcli')
+        print('WebDesktop 已安装成功；Claude 网页版未安装。按上面的提示处理后运行：bash /root/fa-build/install.sh cloudcli',flush=True)
+
 def flow(a,catalogue,read=input):
     if getattr(a,'version',None) is not None:
         tools.require(a.version in catalogue['versions'],'UNKNOWN_INSTALL_VERSION')
@@ -409,10 +419,13 @@ def flow(a,catalogue,read=input):
             tools.diag.report(error)
             print('WebDesktop 已安装成功；Claude CLI 未安装。稍后运行：bash /root/fa-build/install.sh cli')
         domain_url=getattr(a,'domain_url',None)
-        try:domain_url=post_install_domain(a,read)
-        except Exception:
-            print('WebDesktop 和 Claude Desktop 安装已完成；域名绑定未完成。保留现场，稍后运行：bash /root/fa-build/install.sh domain')
-            raise
+        try:
+            try:domain_url=post_install_domain(a,read)
+            except Exception:
+                print('WebDesktop 和 Claude Desktop 安装已完成；域名绑定未完成。保留现场，稍后运行：bash /root/fa-build/install.sh domain')
+                raise
+            # After binding, so its own hostname can join the tunnel; before the credentials, so they stay last.
+            post_install_cloudcli(a,read)
         finally:display_credentials(source,domain_url)
     return True
 

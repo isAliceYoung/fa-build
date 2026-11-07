@@ -95,6 +95,33 @@ class CloudcliSetup(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'CLOUDCLI_DISK_REQUIRED'): self.run_setup()
         self.assertEqual(self.output.getvalue().count('FAILED: CLOUDCLI_DISK_REQUIRED'), 1)
 
+    def offer(self, *answers, **kwargs):
+        replies = iter(answers); self.output = io.StringIO()
+        with contextlib.redirect_stdout(self.output):
+            return S.offer(self.tools, self.private, self.acquire, read=lambda _: next(replies), **kwargs)
+
+    def test_one_click_asks_and_installs_on_y(self):
+        self.assertTrue(self.offer('maybe', 'y', expected_commit=APP))
+        self.assertEqual(self.loaded.CALLS, ['install'])
+        self.assertIn('请输入 y 或 n', self.output.getvalue())
+
+    def test_one_click_skips_on_enter_or_n_and_says_how_to_install_later(self):
+        for answer in ('', 'n', 'N'):
+            with self.subTest(answer=answer):
+                self.assertFalse(self.offer(answer))
+                self.acquire.assert_not_called()
+                self.assertIn('install.sh cloudcli', self.output.getvalue())
+
+    def test_one_click_does_not_ask_on_a_version_without_the_entrance(self):
+        self.state['commit'] = 'c'*40; S.NATIVE.write_text(json.dumps(self.state))
+        self.assertFalse(self.offer())  # no answers: asking would raise StopIteration
+        self.assertEqual(self.output.getvalue(), '')
+        self.acquire.assert_not_called()
+
+    def test_one_click_refuses_a_desktop_other_than_the_one_just_installed(self):
+        with self.assertRaisesRegex(ValueError, 'CLOUDCLI_COMMIT_MISMATCH'): self.offer('y', expected_commit='d'*40)
+        self.acquire.assert_not_called()
+
     def test_a_public_listener_or_unfinished_desktop_is_refused(self):
         for change in ({'bind_host': '0.0.0.0'}, {'phase': 'installing'}, {'branch': 'main'}):
             with self.subTest(change=change):

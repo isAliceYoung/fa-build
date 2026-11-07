@@ -41,9 +41,8 @@ def metadata(tools):
     return value
 
 
-def run(tools, private, acquire, hostname_only=False):
-    """Install CloudCLI UI, or with hostname_only only add its domain hostname. Returns whether it ran."""
-    value = metadata(tools)
+def desktop(tools, private, value):
+    """The pinned-code checker and the installed desktop's state."""
     checker = private.PrivateSource(KEYS, SOURCES/value['commit'], REPO, value['branch'], value['commit'])
     checker.directory(NATIVE.parent, private=True); checker.check_node(NATIVE, private=True)
     tools.require(NATIVE.stat().st_size <= 1024**2, 'CLOUDCLI_INSTALLED_CONTRACT_MISMATCH')
@@ -52,12 +51,51 @@ def run(tools, private, acquire, hostname_only=False):
                   and state.get('status') == state.get('phase') == 'ready' and state.get('branch') == 'feature/CC'
                   and isinstance(state.get('commit'), str) and re.fullmatch('[0-9a-f]{40}', state['commit'])
                   and state.get('bind_host') == '127.0.0.1', 'CLOUDCLI_INSTALLED_CONTRACT_MISMATCH')
+    return checker, state
+
+
+def supported(value, state):
     # The desktop must carry CloudCLI's entrance and ticket routes, so only registered versions qualify.
-    if state['commit'] not in value['supported_versions'].values():
+    return state['commit'] in value['supported_versions'].values()
+
+
+def consent(read):
+    while True:
+        try: answer = read('是否安装 Claude 网页版[y/n]：').strip()
+        except EOFError: return False
+        except KeyboardInterrupt: print(flush=True); return False
+        if answer in ('y', 'Y'): return True
+        if answer in ('', 'n', 'N'): return False
+        print('请输入 y 或 n。')
+
+
+def offer(tools, private, acquire, read=input, expected_commit=None):
+    """The one-click installation's question, after the desktop, the Claude CLI and domain binding."""
+    value = metadata(tools)
+    checker, state = desktop(tools, private, value)
+    tools.require(expected_commit is None or expected_commit == state['commit'], 'CLOUDCLI_COMMIT_MISMATCH')
+    if not supported(value, state): return False  # Older versions: nothing to offer.
+    print('可安装 Claude 网页版（CloudCLI UI）：在浏览器里和这台 VPS 上的 Claude 对话，带终端、文件浏览器和 Git 面板。')
+    print('需要下载并构建约 5-15 分钟，磁盘至少空出 4 GB，内存加 swap 至少 2.4 GB；不够时会提示并跳过，不影响桌面。')
+    if not consent(read):
+        print('已跳过 Claude 网页版；稍后可运行：bash /root/fa-build/install.sh cloudcli')
+        return False
+    return install(tools, value, checker, acquire)
+
+
+def run(tools, private, acquire, hostname_only=False):
+    """Install CloudCLI UI, or with hostname_only only add its domain hostname. Returns whether it ran."""
+    value = metadata(tools)
+    checker, state = desktop(tools, private, value)
+    if not supported(value, state):
         oldest = min(value['supported_versions'], key=lambda v: tuple(map(int, v.split('.'))))
         print('当前 WebDesktop 版本还不支持 Claude 网页版。请先在桌面「设置」里更新到 ' + oldest + ' 或更新的版本，再运行本命令。')
         return False
-    tools.diag.begin('claude-cli')
+    return install(tools, value, checker, acquire, hostname_only)
+
+
+def install(tools, value, checker, acquire, hostname_only=False):
+    tools.diag.begin('cloudcli')
     repo = acquire(checker)
     tools.require(Path(repo) == checker.source, 'PINNED_SOURCE_MODULE_DIGEST_MISMATCH')
     for relative, expected in value['files'].items():
