@@ -10,7 +10,9 @@
 bash /root/fa-build/install.sh cloudcli
 ```
 
-It builds the pinned upstream commit with the WebDesktop patch from the reviewed fa commit in `cloudcli-maintenance.json` (every file checked by SHA-256 first), runs it as the terminal user inside the terminal sandbox, and puts a **Claude 网页版** icon on the desktop. The icon opens it with a one-time ticket. Without a domain it is at `http://127.0.0.1:3001` (forward port 3001 with SSH like port 3000); with a bound domain, `install.sh cloudcli` (or later `install.sh cloudcli-domain`) asks for a temporary Cloudflare token and adds `<name>-claude.<zone>` to the same tunnel. The token is read hidden and never saved. Domain binding for 1.12.1 itself is not supported yet. Real VPS and real Cloudflare acceptance remain **NOT RUN**.
+It builds the pinned upstream commit with the WebDesktop patch from the reviewed fa commit in `cloudcli-maintenance.json` (every file checked by SHA-256 first), runs it as the terminal user inside the terminal sandbox, and puts a **Claude 网页版** icon on the desktop. The icon opens it with a one-time ticket. Without a domain it is at `http://127.0.0.1:3001` (forward port 3001 with SSH like port 3000); with a bound domain, `install.sh cloudcli` (or later `install.sh cloudcli-domain`) asks for a temporary Cloudflare token and adds `<name>-claude.<zone>` to the same tunnel. The token is read hidden and never saved. `install.sh cloudcli` on a real VPS works (s-irom-01); the one-click flow below and the CloudCLI hostname on real Cloudflare are not verified yet.
+
+A one-click installation of 1.12.1 asks `是否安装 Claude 网页版[y/n]：` after the Claude CLI and domain binding and before the login details; Enter or n skips it, and a failure or Ctrl+C never fails the installation. Older versions are not asked. Domain binding now runs the reviewed fa commit `aa80c5b`, which also accepts 1.12.1 and the coming 2.0.0.
 
 ## WebDesktop 1.11.2
 
@@ -75,7 +77,7 @@ The administrator explicitly authorizes temporary API Token use on the VPS. The 
 
 Use an API Token scoped to **Cloudflare Tunnel: Edit** for the intended account and **DNS: Edit** only for the domain you bind. The same account and existing zone reuse their Account ID and Zone ID across new VPS deployments; recheck after changing accounts or recreating/moving a zone. See [Cloudflare's ID guide](https://developers.cloudflare.com/fundamentals/account/find-account-and-zone-ids/).
 
-Automatic binding supports the fixed 1.11.2, 1.11.1, 1.11.0, 1.10.3, 1.10.2, 1.10.1, 1.10.0, 1.9.0, 1.8.1, 1.8.0, 1.7.0, 1.6.0 and 1.5.0 application commits. Older versions and Beta are unchanged and skip this feature. `domain-maintenance.json` separately pins the private maintenance commit and all six helper hashes; the installer uses the existing isolated Deploy Key and verified GitHub host, or anonymous HTTPS when the repository is public, to obtain that exact code. The 1.9.0 entry is the default; all previously published tags and version mappings remain unchanged. This avoids substituting maintenance code for the signed installed application.
+Automatic binding supports the fixed 1.12.1, 1.11.2, 1.11.1, 1.11.0, 1.10.3, 1.10.2, 1.10.1, 1.10.0, 1.9.0, 1.8.1, 1.8.0, 1.7.0, 1.6.0 and 1.5.0 application commits. Older versions and Beta are unchanged and skip this feature. `domain-maintenance.json` separately pins the private maintenance commit and all six helper hashes; the installer uses the existing isolated Deploy Key and verified GitHub host, or anonymous HTTPS when the repository is public, to obtain that exact code. The 1.9.0 entry is the default; all previously published tags and version mappings remain unchanged. This avoids substituting maintenance code for the signed installed application.
 
 After skipping or a reviewed recoverable binding failure, run the dedicated action from this **updated, reviewed** checkout:
 
