@@ -29,7 +29,7 @@ PUBLIC_URL='https://github.com/isAliceYoung/fa.git'
 # Older versions' own web updaters still read the repository through the Deploy Key.
 PUBLIC_UPDATES='1.11.2'
 # Test releases awaiting a real VPS run: listed with a warning, never the default.
-TEST_VERSIONS={'1.12.0'}
+TEST_VERSIONS={'1.12.1'}
 TEST_LABEL='（测试版，请勿安装）'
 INSTALL_RECORDS=(Path('/etc/webdesktop-isolated/state.json'),Path('/var/lib/webdesktop-bootstrap/state.json'),Path('/var/lib/webdesktop-fresh/state.json'))
 PASSWORD_COMMAND=Path('/usr/local/sbin/password.sh')

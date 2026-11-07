@@ -2,7 +2,7 @@
   "schema": 1,
   "repository": "git@github.com:isAliceYoung/fa.git",
   "branch": "feature/CC",
-  "commit": "6c3af5df4792c4047e453caa95ae519522e4435d",
+  "commit": "867f93378b025143ce66ba139ad76c74de490391",
   "entrypoint": "webdesktop-deploy/scripts/cloudcli_install.py",
   "files": {
     "webdesktop-deploy/scripts/cloudcli_install.py": "93c06600cb4f811e2de655fbd15943e715720ae952a4f3872065db38849cd1c3",
@@ -11,6 +11,6 @@
     "webdesktop-deploy/cloudcli/cloudcli.patch": "a3c56dd894ebf02552ae17d1d1eb81a0e93f34af0afff1c40b56a0650206828e"
   },
   "supported_versions": {
-    "1.12.0": "6c3af5df4792c4047e453caa95ae519522e4435d"
+    "1.12.1": "867f93378b025143ce66ba139ad76c74de490391"
   }
 }

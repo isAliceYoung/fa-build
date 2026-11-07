@@ -4,13 +4,13 @@
   "schema": 2,
   "source_helper_sha256": "af2ac752783f3fbe045d49e69598d05d702f9c6a9680256d1263af060f323d9f",
   "versions": {
-    "1.12.0": {
+    "1.12.1": {
       "branch": "feature/CC",
-      "commit": "6c3af5df4792c4047e453caa95ae519522e4435d",
+      "commit": "867f93378b025143ce66ba139ad76c74de490391",
       "engine": "isolated",
       "entrypoint": "webdesktop-deploy/scripts/interactive_deploy.py",
       "entrypoint_sha256": "a20ad2d3884c832e351c616f7961103036fbcbd2fc918f7a2e3b25fa5cde7c44",
-      "tag": "v1.12.0"
+      "tag": "v1.12.1"
     },
     "1.11.2": {
       "branch": "feature/CC",
