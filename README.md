@@ -8,6 +8,12 @@ When `isAliceYoung/fa` is public, installation skips Deploy Key authorization an
 
 After each successful update, WebDesktop removes old program versions, their build files and older user data backups. It keeps the current and previous versions and the 2 newest user data backups. Database backups and the records of failed updates stay. A cleanup failure is logged and never fails the update. Cleanup starts with the update after 1.11.1 is installed. Real VPS acceptance remains **NOT RUN**.
 
+## Shared Claude session
+
+`install.sh cli` also runs Claude once, as the terminal user and inside the terminal's sandbox, in a resident tmux session (`wd-claude-session.service`). Typing `claude` in the web terminal or in a root SSH shell joins that session, so both see the same Claude, sign-in, settings and history; closing the window or pressing Ctrl+B then D leaves Claude running. `/exit` sends everyone back to their own shell and starts a fresh Claude; earlier chats stay in `/resume`. `claude` with arguments runs once in the current window as the terminal user. Claude works in `/home/wdguest` and cannot see `/root`; the plain binary stays at `/opt/claude-cli/.local/bin/claude`.
+
+Root never attaches to the session directly, because tmux can make an attached client run a command: a network-less terminal-user process joins for it. To update an installed VPS, pull `/root/fa-build` as below and run `bash /root/fa-build/install.sh cli` again. CMCP 4.17.3 and later hand their SSH tool connector to the terminal user on such a VPS, so the shared Claude gets CMCP's tools when the device uses SSH sign-in. Real VPS acceptance remains **NOT RUN**.
+
 ## WebDesktop 1.11.0
 
 The web terminal can run Claude CLI with CMCP tools. It now has the same filtered public network as graphical apps, so anyone who can open it can reach the internet from it. Sessions stay for 6 hours after a disconnect, keep running and replay up to 16 MiB of output, a new window adopts a session left detached, and there are up to 4 terminals.
