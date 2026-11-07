@@ -149,6 +149,16 @@ class SharedSession(unittest.TestCase):
         self.assertIn(' -D ', start)
         self.assertIn('ExecStartPre=/usr/bin/install -d -m 0700 '+c.SOCKET_DIRECTORY, unit)
 
+    def test_the_nologin_account_shell_never_starts_the_session(self):
+        # With nologin the session ended at once and `claude` only printed [exited].
+        conf = c.session_files()[c.SESSION/'tmux.conf'][0].splitlines()
+        self.assertIn('set -g default-shell /bin/bash', conf)
+        self.assertLess(conf.index('set -g default-shell /bin/bash'), next(i for i, l in enumerate(conf) if l.startswith('new-session')))
+        self.assertIn('SHELL=/bin/bash', c.ENVIRONMENT)
+        unit = c.session_files()[c.UNIT][0]
+        self.assertIn(' SHELL=/bin/bash ', unit)
+        self.assertIn("-E 'SHELL=/bin/bash'", c.command_text())
+
     def test_claude_restarts_and_everyone_returns_to_their_shell_after_exit(self):
         files = c.session_files()
         loop = files[c.SESSION/'run'][0]

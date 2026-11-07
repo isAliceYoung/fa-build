@@ -43,7 +43,8 @@ SANDBOX = (
     'ProtectKernelTunables=yes', 'ProtectKernelModules=yes', 'RestrictNamespaces=yes', 'RestrictRealtime=yes',
     'LockPersonality=yes', 'SystemCallArchitectures=native', 'OOMScoreAdjust=500', 'TasksMax=512', 'LimitNOFILE=65536',
 )
-ENVIRONMENT = ('HOME='+HOME, 'USER=wdterm', 'LOGNAME=wdterm', 'PATH=/usr/local/bin:/usr/bin:/bin',
+# wdterm's login shell is nologin, which systemd would pass on as SHELL; the web terminal uses bash.
+ENVIRONMENT = ('HOME='+HOME, 'USER=wdterm', 'LOGNAME=wdterm', 'SHELL=/bin/bash', 'PATH=/usr/local/bin:/usr/bin:/bin',
                'LANG=C.UTF-8', 'LC_ALL=C.UTF-8', 'DISABLE_AUTOUPDATER=1', 'COLORTERM=truecolor')
 
 
@@ -80,6 +81,8 @@ def session_files():
     conf = '\n'.join([
         '# WebDesktop shared Claude session',
         'set -g status off',
+        # tmux starts the session through this shell; the account's own is nologin.
+        'set -g default-shell /bin/bash',
         'set -g mouse on',
         'set -g escape-time 10',
         'set -g history-limit 20000',
