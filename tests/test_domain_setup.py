@@ -29,8 +29,8 @@ class CurrentMetadata(unittest.TestCase):
         self.assertEqual(set(value['supported_versions']),{'1.5.0','1.6.0','1.7.0','1.8.0','1.8.1','1.9.0','1.10.0','1.10.1','1.10.2','1.10.3','1.11.0','1.11.1','1.11.2','1.12.1','2.0.0'})
         for version, commit in value['supported_versions'].items():
             self.assertEqual(commit,catalogue['versions'][version]['commit'])
-        # aa80c5b: the 1.11.2 domain code (32d2854) plus CloudCLI's hostname and the 1.12.1 / 2.0.0 versions.
-        self.assertEqual(value['commit'],'aa80c5bf71f582b1a352544b224dff02dd369028')
+        # 6078701: aa80c5b (1.11.2 domain code, CloudCLI hostname, 1.12.1 / 2.0.0) plus hidden account and zone IDs.
+        self.assertEqual(value['commit'],'607870195a196cacf9394dcd52b87507ebaa3355')
         self.assertNotIn(value['commit'],value['supported_versions'].values())
         self.assertNotEqual(value['commit'],value['supported_versions']['1.8.1'])
         self.assertNotEqual(value['commit'],value['supported_versions']['1.8.0'])

@@ -16,7 +16,7 @@ bash /root/fa-build/install.sh cloudcli
 
 It builds the pinned upstream commit with the WebDesktop patch from the reviewed fa commit in `cloudcli-maintenance.json` (every file checked by SHA-256 first), runs it as the terminal user inside the terminal sandbox, and puts a **Claude 网页版** icon on the desktop. The icon opens it with a one-time ticket. Without a domain it is at `http://127.0.0.1:3001` (forward port 3001 with SSH like port 3000); with a bound domain, `install.sh cloudcli` (or later `install.sh cloudcli-domain`) asks for a temporary Cloudflare token and adds `<name>-claude.<zone>` to the same tunnel. The token is read hidden and never saved. `install.sh cloudcli` on a real VPS works (s-irom-01); the one-click flow below and the CloudCLI hostname on real Cloudflare are not verified yet.
 
-A one-click installation of 1.12.1 asks `是否安装 Claude 网页版[y/n]：` after the Claude CLI and domain binding and before the login details; Enter or n skips it, and a failure or Ctrl+C never fails the installation. Older versions are not asked. Domain binding now runs the reviewed fa commit `aa80c5b`, which also accepts 1.12.1 and the coming 2.0.0.
+A one-click installation of 1.12.1 asks `是否安装 Claude 网页版[y/n]：` after the Claude CLI and domain binding and before the login details; Enter or n skips it, and a failure or Ctrl+C never fails the installation. Older versions are not asked. Domain binding now runs the reviewed fa commit `6078701`, which also accepts 1.12.1 and 2.0.0 and reads the Cloudflare Account ID and Zone ID hidden, like the API token (a malformed ID asks again).
 
 ## WebDesktop 1.11.2
 
