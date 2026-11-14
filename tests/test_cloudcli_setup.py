@@ -100,17 +100,18 @@ class CloudcliSetup(unittest.TestCase):
         with contextlib.redirect_stdout(self.output):
             return S.offer(self.tools, self.private, self.acquire, read=lambda _: next(replies), **kwargs)
 
-    def test_one_click_asks_and_installs_on_y(self):
-        self.assertTrue(self.offer('maybe', 'y', expected_commit=APP))
+    def test_one_click_installs_by_default_without_consuming_any_input(self):
+        self.assertTrue(self.offer(expected_commit=APP))
         self.assertEqual(self.loaded.CALLS, ['install'])
-        self.assertIn('请输入 y 或 n', self.output.getvalue())
+        self.assertIn('默认安装 ClaudeWeb', self.output.getvalue())
+        self.assertNotIn('是否安装', self.output.getvalue())
 
-    def test_one_click_skips_on_enter_or_n_and_says_how_to_install_later(self):
-        for answer in ('', 'n', 'N'):
-            with self.subTest(answer=answer):
-                self.assertFalse(self.offer(answer))
-                self.acquire.assert_not_called()
-                self.assertIn('install.sh cloudcli', self.output.getvalue())
+    def test_installation_does_not_consume_the_domain_answer(self):
+        read=Mock(side_effect=AssertionError('Only the pinned domain step may prompt'))
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertTrue(S.offer(self.tools,self.private,self.acquire,read=read,expected_commit=APP))
+        read.assert_not_called()
+        self.assertEqual(self.loaded.CALLS,['install'])
 
     def test_one_click_does_not_ask_on_a_version_without_the_entrance(self):
         self.state['commit'] = 'c'*40; S.NATIVE.write_text(json.dumps(self.state))

@@ -59,27 +59,14 @@ def supported(value, state):
     return state['commit'] in value['supported_versions'].values()
 
 
-def consent(read):
-    while True:
-        try: answer = read('是否安装 Claude 网页版[y/n]：').strip()
-        except EOFError: return False
-        except KeyboardInterrupt: print(flush=True); return False
-        if answer in ('y', 'Y'): return True
-        if answer in ('', 'n', 'N'): return False
-        print('请输入 y 或 n。')
-
-
 def offer(tools, private, acquire, read=input, expected_commit=None):
-    """The one-click installation's question, after the desktop, the Claude CLI and domain binding."""
+    """Install the integrated ClaudeWeb by default; its existing domain question stays in pinned code."""
     value = metadata(tools)
     checker, state = desktop(tools, private, value)
     tools.require(expected_commit is None or expected_commit == state['commit'], 'CLOUDCLI_COMMIT_MISMATCH')
-    if not supported(value, state): return False  # Older versions: nothing to offer.
-    print('可安装 Claude 网页版（CloudCLI UI）：在浏览器里和这台 VPS 上的 Claude 对话，带终端、文件浏览器和 Git 面板。')
-    print('需要下载并构建约 5-15 分钟，磁盘至少空出 4 GB，内存加 swap 至少 2.4 GB；不够时会提示并跳过，不影响桌面。')
-    if not consent(read):
-        print('已跳过 Claude 网页版；稍后可运行：bash /root/fa-build/install.sh cloudcli')
-        return False
+    if not supported(value, state): return False  # Historical releases lack the gateway contract.
+    print('正在默认安装 ClaudeWeb（CloudCLI UI），作为 WebDesktop 的集成组件。')
+    print('下载并构建约 5-15 分钟；需要磁盘至少空出 4 GB、内存加 swap 至少 2.4 GB。')
     return install(tools, value, checker, acquire)
 
 

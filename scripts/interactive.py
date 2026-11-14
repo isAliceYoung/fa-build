@@ -24,6 +24,7 @@ REPO='git@github.com:isAliceYoung/fa.git'
 KEYS=Path('/root/.ssh/webdesktop-build-fa')
 SOURCES=Path('/opt/webdesktop-private-build/sources')
 CREDENTIALS=Path('/etc/webdesktop-isolated/login.json')
+CLOUDCLI_ENTRY=Path('/etc/webdesktop-cloudcli/entry.json')
 CATALOGUE_URL='https://raw.githubusercontent.com/isAliceYoung/fa-build/main/release.json'
 _LOCAL_CATALOGUE=object()
 PUBLIC_URL='https://github.com/isAliceYoung/fa.git'
@@ -294,8 +295,74 @@ def available_versions(catalogue,source):
     return dict(catalogue,versions=versions,default_version=default)
 
 
+def read_display_json(source,path,private_file=True):
+    """Read bounded root-owned configuration without following a swapped file or printing its bytes."""
+    source.directory(path.parent,private=private_file)
+    source.check_node(path,private=private_file)
+    descriptor=os.open(path,os.O_RDONLY|os.O_NOFOLLOW|os.O_CLOEXEC)
+    with os.fdopen(descriptor,'rb') as stream:
+        meta=os.fstat(stream.fileno());current=path.lstat()
+        tools.require((meta.st_dev,meta.st_ino)==(current.st_dev,current.st_ino) and stat.S_ISREG(meta.st_mode)
+                      and meta.st_uid==0 and meta.st_nlink==1 and not stat.S_IMODE(meta.st_mode)&(0o077 if private_file else 0o022),
+                      'DISPLAY_INPUT_CHANGED')
+        raw=stream.read(16385)
+    tools.require(len(raw)<=16384,'DISPLAY_INPUT_SIZE')
+    value=json.loads(raw)
+    tools.require(isinstance(value,dict),'DISPLAY_INPUT_FORMAT')
+    return value
+
+
+def display_origin(value):
+    tools.require(isinstance(value,str) and re.fullmatch(r'https://(?=[a-z0-9.-]{4,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:[a-z]{2,63}|xn--[a-z0-9-]{1,59})',value),'DISPLAY_ORIGIN_FORMAT')
+    return value
+
+
+def cloudcli_access(source):
+    """Only advertise a configured entrance, never invent the hostname of a skipped binding."""
+    try:
+        if not os.path.lexists(CLOUDCLI_ENTRY):return None
+        value=read_display_json(source,CLOUDCLI_ENTRY,private_file=False)
+        port=value.get('port');origins=value.get('origins')
+        tools.require(value.get('schema')==1 and type(port) is int and 1024<=port<=65535
+                      and isinstance(origins,list) and 1<=len(origins)<=8 and all(isinstance(v,str) for v in origins)
+                      and 'http://127.0.0.1:'+str(port) in origins,'DISPLAY_CLOUDCLI_FORMAT')
+        named=[display_origin(v) for v in origins if v!='http://127.0.0.1:'+str(port)]
+        return dict(port=port,url=named[0] if named else None)
+    except (OSError,ValueError,private.Failure):return None
+
+
+def credential_summary(value,domain_url,cloudcli):
+    """Return separate user and administrator blocks; the caller must write them only to /dev/tty."""
+    def password(key):
+        result=value.get(key)
+        tools.require(isinstance(result,str) and 6<=len(result)<=128 and result.isascii() and result.isprintable(),'DISPLAY_CREDENTIAL_FORMAT')
+        return result
+    desktop_password=password('DESKTOP_PASSWORD');admin_password=password('ADMIN_PASSWORD')
+    admin_user=value.get('ADMIN_USER');admin_path=value.get('ADMIN_PATH')
+    tools.require(isinstance(admin_user,str) and re.fullmatch(r'[A-Za-z0-9_.@-]{1,64}',admin_user)
+                  and isinstance(admin_path,str) and re.fullmatch(r'/?[A-Za-z0-9][A-Za-z0-9_-]{0,127}',admin_path),'DISPLAY_CREDENTIAL_FORMAT')
+    admin_path='/'+admin_path.lstrip('/')
+    if domain_url is not None:domain_url=display_origin(domain_url)
+    lines=['','交给用户的信息：','WebDesktop 与 ClaudeWeb 共用同一份网页访问密码。','','【域名访问】']
+    if domain_url:lines+=['WebDesktop 网址：'+domain_url,'WebDesktop 密码：'+desktop_password]
+    else:lines+=['WebDesktop：域名尚未绑定或绑定未完成。','后续绑定：bash /root/fa-build/install.sh domain']
+    if cloudcli and cloudcli['url']:lines+=['ClaudeWeb 网址：'+cloudcli['url'],'ClaudeWeb 密码：'+desktop_password]
+    elif cloudcli:lines+=['ClaudeWeb：已安装，独立域名尚未添加。','后续添加：bash /root/fa-build/install.sh cloudcli-domain']
+    else:lines+=['ClaudeWeb：未安装成功或入口配置不可用。','修复后重试：bash /root/fa-build/install.sh cloudcli']
+    lines+=['','【SSH 隧道访问】','在本地电脑执行（替换 SSH用户名 与 VPS地址）：',
+            'ssh -N -L 3000:127.0.0.1:3000'+(' -L '+str(cloudcli['port'])+':127.0.0.1:'+str(cloudcli['port']) if cloudcli else '')+' SSH用户名@VPS地址',
+            'WebDesktop 网址：http://127.0.0.1:3000','WebDesktop 密码：'+desktop_password]
+    if cloudcli:lines+=['ClaudeWeb 网址：http://127.0.0.1:'+str(cloudcli['port']),'ClaudeWeb 密码：'+desktop_password]
+    lines+=['以上是网页访问密码；SSH 登录使用服务器自己的 SSH 凭据。',
+            '','以下管理信息仅由管理员保留，请勿发给用户：','【管理员】']
+    if domain_url:lines+=['管理员域名网址：'+domain_url+admin_path]
+    lines+=['管理员 SSH 隧道网址：http://127.0.0.1:3000'+admin_path,'管理员账号：'+admin_user,'管理员密码：'+admin_password,
+            '以上为安装时生成的初始凭据；如已修改密码，请使用修改后的密码。','']
+    return '\n'.join(lines)
+
+
 def display_credentials(source, domain_url=None):
-    """Run cat after success, writing only to the operator's controlling terminal."""
+    """Write labeled access details only to the root operator's controlling terminal."""
     tools.require(os.geteuid()==0,'ROOT_REQUIRED')
     try:
         source.directory(CREDENTIALS.parent,private=True)
@@ -308,30 +375,11 @@ def display_credentials(source, domain_url=None):
         print('安装已成功；当前无法安全自动显示初始密码，请在本机 root 终端执行：cat /etc/webdesktop-isolated/login.json')
         return False
     with os.fdopen(fd,'w',encoding='utf-8') as terminal:
-        if domain_url is not None:
-            tools.require(isinstance(domain_url,str) and re.fullmatch(r'https://(?=[a-z0-9.-]{4,253})[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+\.(?:[a-z]{2,63}|xn--[a-z0-9-]{1,59})',domain_url),'DOMAIN_HOSTNAME')
-            # Show the user handoff only on the administrator's TTY, never in
-            # stdout, build output or persistent deployment diagnostics.
-            secret_fd=os.open(CREDENTIALS,os.O_RDONLY|os.O_NOFOLLOW|os.O_CLOEXEC)
-            with os.fdopen(secret_fd,'rb') as stream:
-                meta=os.fstat(stream.fileno());current=CREDENTIALS.lstat()
-                tools.require((meta.st_dev,meta.st_ino)==(current.st_dev,current.st_ino) and stat.S_ISREG(meta.st_mode)
-                              and meta.st_uid==0 and meta.st_nlink==1 and stat.S_IMODE(meta.st_mode)==0o600,'DOMAIN_INPUT_CHANGED')
-                raw=stream.read(16385)
-            tools.require(len(raw)<=16384,'DOMAIN_INPUT_SIZE')
-            password=json.loads(raw).get('DESKTOP_PASSWORD')
-            tools.require(isinstance(password,str) and 6<=len(password)<=128 and password.isascii() and password.isprintable(),'DOMAIN_CREDENTIAL_FORMAT')
-            terminal.write('\n交给用户的信息：\n桌面地址：'+domain_url+'\n桌面密码：'+password+'\n\n以下管理信息仅由管理员保留，请勿发给用户：\n')
-        else:terminal.write('\n初始桌面和管理员登录信息：\n')
-        terminal.flush()
-        try:
-            result=subprocess.run(['/usr/bin/cat','--',CREDENTIALS.as_posix()],stdin=subprocess.DEVNULL,stdout=terminal,
-                                  stderr=subprocess.DEVNULL,env={'PATH':'/usr/bin:/bin','LANG':'C.UTF-8'},timeout=10,check=False)
-        except (OSError,subprocess.TimeoutExpired):result=None
-        if result is None or result.returncode!=0:
+        try:summary=credential_summary(read_display_json(source,CREDENTIALS),domain_url,cloudcli_access(source))
+        except (OSError,ValueError,private.Failure):
             print('安装已成功；自动读取初始密码未完成，请在本机 root 终端执行：cat /etc/webdesktop-isolated/login.json')
             return False
-        terminal.write('\n');terminal.flush()
+        terminal.write(summary);terminal.flush()
     return True
 
 
@@ -358,9 +406,9 @@ def post_install_domain(a,read=input):
     return component.offer(tools,private,acquire,read=read,expected_commit=getattr(a,'commit',None))
 
 def post_install_cloudcli(a,read=input):
-    """Optional Claude 网页版 after the desktop, the CLI and domain binding; never fails the installation."""
+    """Default integrated component; failures preserve the desktop and report an incomplete ClaudeWeb install."""
     try:
-        load('public_cloudcli_setup',HERE/'cloudcli_setup.py').offer(tools,private,acquire,read=read,expected_commit=getattr(a,'commit',None))
+        return load('public_cloudcli_setup',HERE/'cloudcli_setup.py').offer(tools,private,acquire,read=read,expected_commit=getattr(a,'commit',None))
     except KeyboardInterrupt:
         print('\n已中断 Claude 网页版安装；桌面不受影响。稍后可运行：bash /root/fa-build/install.sh cloudcli',flush=True)
     except Exception as error:
@@ -428,7 +476,7 @@ def flow(a,catalogue,read=input):
             except Exception:
                 print('WebDesktop 和 Claude Desktop 安装已完成；域名绑定未完成。保留现场，稍后运行：bash /root/fa-build/install.sh domain')
                 raise
-            # After binding, so its own hostname can join the tunnel; before the credentials, so they stay last.
+            # Keep the existing domain flow and ordering; only the UI installation consent is removed.
             post_install_cloudcli(a,read)
         finally:display_credentials(source,domain_url)
     return True

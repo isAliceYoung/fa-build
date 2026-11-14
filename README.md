@@ -2,7 +2,19 @@
 
 ## WebDesktop 2.0.0
 
-2.0.0 is the stable release of **Claude 网页版** (CloudCLI UI) and the default for new installations. The one-click installation asks `是否安装 Claude 网页版[y/n]：` after the Claude CLI and domain binding; on an installed VPS, update to 2.0.0 in Settings, update the local checkout with `git -C /root/fa-build -c core.hooksPath=/dev/null -c core.fsmonitor=false pull --ff-only`, then run `bash /root/fa-build/install.sh cloudcli`. CMCP 4.18.0 can open it directly. Domain binding supports 2.0.0. The section below describes the feature, first published as the 1.12.1 test release.
+2.0.0 is the stable release of **Claude 网页版** (CloudCLI UI) and the default for new installations. The one-click installation now installs ClaudeWeb (CloudCLI UI) automatically after the Claude CLI and the existing domain flow; there is no separate installation question; on an installed VPS, update to 2.0.0 in Settings, update the local checkout with `git -C /root/fa-build -c core.hooksPath=/dev/null -c core.fsmonitor=false pull --ff-only`, then run `bash /root/fa-build/install.sh cloudcli`. CMCP 4.18.0 can open it directly. Domain binding supports 2.0.0. The section below describes the feature, first published as the 1.12.1 test release.
+
+## 安装结束后的访问信息
+
+支持的版本默认安装 ClaudeWeb，不再询问是否安装 CloudCLI。WebDesktop 域名绑定与 ClaudeWeb 独立域名添加仍按原流程询问，可跳过并在之后执行 `install.sh domain` / `install.sh cloudcli-domain`。
+
+最后在管理员当前终端分区显示：
+
+- **域名访问**：已配置的 WebDesktop 与 ClaudeWeb 网址，各自标明网页访问密码；未绑定或添加失败时明确显示待完成及后续命令，不推算或虚构网址。
+- **SSH 隧道访问**：本地电脑的双端口转发命令、`http://127.0.0.1:3000` 与 `http://127.0.0.1:3001`（以实际配置端口为准）、各自的网页访问密码。
+- **管理员信息**：单独显示管理页的域名／隧道网址、管理员账号与管理员密码。
+
+WebDesktop 与 ClaudeWeb 使用同一份网页访问密码，域名与隧道访问均相同；SSH 账号的登录凭据由 VPS 自身管理。输出读取安装生成的初始凭据，后续改过密码时请使用新密码。密码只写入 root 的 `/dev/tty`，不会写入标准输出或安装诊断；没有安全终端时仅提示 root 手动读取 `/etc/webdesktop-isolated/login.json`。
 
 ## WebDesktop 1.12.1（测试版，请勿更新）
 
@@ -16,7 +28,7 @@ bash /root/fa-build/install.sh cloudcli
 
 It builds the pinned upstream commit with the WebDesktop patch from the reviewed fa commit in `cloudcli-maintenance.json` (every file checked by SHA-256 first), runs it as the terminal user inside the terminal sandbox, and puts a **Claude 网页版** icon on the desktop. The icon opens it with a one-time ticket. Without a domain it is at `http://127.0.0.1:3001` (forward port 3001 with SSH like port 3000); with a bound domain, `install.sh cloudcli` (or later `install.sh cloudcli-domain`) asks for a temporary Cloudflare token and adds `<name>-claude.<zone>` to the same tunnel. The token is read hidden and never saved. `install.sh cloudcli` on a real VPS works (s-irom-01); the one-click flow below and the CloudCLI hostname on real Cloudflare are not verified yet.
 
-A one-click installation of 1.12.1 asks `是否安装 Claude 网页版[y/n]：` after the Claude CLI and domain binding and before the login details; Enter or n skips it, and a failure or Ctrl+C never fails the installation. Older versions are not asked. Domain binding now runs the reviewed fa commit `6078701`, which also accepts 1.12.1 and 2.0.0 and reads the Cloudflare Account ID and Zone ID hidden, like the API token (a malformed ID asks again).
+For supported versions, the current one-click entry installs ClaudeWeb by default after the Claude CLI and domain binding and before the login details. The domain questions (including skip and later binding) are unchanged. A failed/interrupted ClaudeWeb installation preserves the installed desktop and reports the retry command; older versions without the entrance are unchanged. Domain binding now runs the reviewed fa commit `6078701`, which also accepts 1.12.1 and 2.0.0 and reads the Cloudflare Account ID and Zone ID hidden, like the API token (a malformed ID asks again).
 
 ## WebDesktop 1.11.2
 
@@ -147,7 +159,7 @@ After GitHub read authorization, the bootstrap fetches the latest official versi
 
 | Input | Fixed commit | Installer |
 | --- | --- | --- |
-| `2.0.0` | `a3dae3f95ffcb5260f35411584f60df746947177` (`v2.0.0`) | Claude 网页版 (CloudCLI UI), offered by the one-click installation; CMCP 4.18.0 sign-in. Default. |
+| `2.0.0` | `a3dae3f95ffcb5260f35411584f60df746947177` (`v2.0.0`) | Claude 网页版 (CloudCLI UI), installed by default by the one-click entry; CMCP 4.18.0 sign-in. Default. |
 | `1.12.1` | `867f93378b025143ce66ba139ad76c74de490391` (`v1.12.1`) | **测试版，请勿安装。** Claude 网页版 (CloudCLI UI); not the default. |
 | `1.11.2` | `370bc4125f3183a0014021ac96c78bdcf213d769` (`v1.11.2`) | Reads a public repository without the Deploy Key. |
 | `1.11.1` | `50cbbd1565cdb1f2d006b5b897f76e290ca956a4` (`v1.11.1`) | Automatic cleanup after a successful update. |
@@ -234,7 +246,7 @@ bash /opt/webdesktop/source/webdesktop-deploy/install-fresh.sh status
 
 Credentials are in `/etc/webdesktop-isolated/login.json`; ordinary logs only give this path. Native diagnostics are under `/etc/webdesktop-isolated/install.log`. For 1.7.0, 1.6.0 and 1.5.0, use the verified HTTPS URL after domain binding. If binding is skipped, the backend remains server-local at `127.0.0.1:3000`; administrator SSH forwarding or a separately reviewed HTTPS proxy is required. Older fixed versions retain their original listener behavior. Desktop/admin authentication and same-origin checks remain. Existing installations are not automatically rebound or repaired.
 
-After the isolated coordinator returns from successful installation and health checks, this public wrapper automatically executes `/usr/bin/cat -- /etc/webdesktop-isolated/login.json`. It validates the protected root-owned path first and sends the initial credentials directly to the operator's controlling terminal (`/dev/tty`), not captured stdout, stderr, diagnostic records or installation logs. If no controlling terminal is available, or the safe read fails, installation remains successful and the manual read command is printed instead. External terminal/session recording can still record what the operator sees. The file contains initial credentials; later changed passwords remain in the database and are not replaced by the old seed during updates. Failed installation or health checks never execute the credential display. No existing version tag or private application code is changed by this wrapper improvement.
+After successful installation, the public wrapper reads `/etc/webdesktop-isolated/login.json` through bounded, root-owned descriptor/identity checks and formats separate user/domain/SSH and administrator blocks. It sends the initial credentials directly to the operator's controlling terminal (`/dev/tty`), not captured stdout, stderr, diagnostic records or installation logs. If no controlling terminal is available, or the safe read fails, installation remains successful and the manual read command is printed instead. External terminal/session recording can still record what the operator sees. The file contains initial credentials; later changed passwords remain in the database and are not replaced by the old seed during updates. Failed installation or health checks never execute the credential display. No existing version tag or private application code is changed by this wrapper improvement.
 
 From 1.1.0, signed application updates in desktop Settings require an active desktop session and explicit confirmation, without retyping an administrator or desktop password. Root still independently verifies the session and one-use confirmation, the signed prepared release and system-layer compatibility. History cleanup retains administrator reauthentication. The public bootstrap does not implement git pull updates. Automatic in-place system-layer upgrades remain unavailable. GitHub source assets are not signed online-update runtime packages.
 
