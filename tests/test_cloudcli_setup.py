@@ -116,7 +116,63 @@ class CloudcliSetup(unittest.TestCase):
     def test_one_click_does_not_ask_on_a_version_without_the_entrance(self):
         self.state['commit'] = 'c'*40; S.NATIVE.write_text(json.dumps(self.state))
         self.assertFalse(self.offer())  # no answers: asking would raise StopIteration
-        self.assertEqual(self.output.getvalue(), '')
+        self.assertIn('已跳过 ClaudeWeb', self.output.getvalue())
+        self.assertIn('没有尝试构建', self.output.getvalue())
+        self.acquire.assert_not_called()
+
+    def test_published_default_and_test_release_both_have_pinned_installers(self):
+        with patch.object(S, 'ROOT', BASE): value = S.metadata(self.tools)
+        catalogue = UI.metadata()
+        self.assertEqual(catalogue['default_version'], '2.0.0')
+        self.assertIn(catalogue['default_version'], value['supported_versions'])
+        for version in ('1.12.1', '2.0.0', '3.0.0'):
+            with self.subTest(version=version):
+                app = catalogue['versions'][version]['commit']
+                self.assertEqual(value['supported_versions'][version], app)
+                selected = S.installer_for(value, {'commit': app})
+                expected = '620e652912a409c5e743e2185ffd36c5aa033d58' if version == '3.0.0' else 'afbbeeba223c530a7c9a9cdcd1cb13209d116f7e'
+                self.assertEqual(selected['commit'], expected)
+                self.assertEqual(set(selected['files']), S.MODULES)
+
+    def versioned_fixture(self, version):
+        self.value['supported_versions'] = {'2.0.0': APP, '3.0.0': 'e'*40}
+        self.value['version_installers'] = {'3.0.0': {'commit': 'd'*40, 'files': dict(self.value['files'])}}
+        self.state['commit'] = self.value['supported_versions'][version]
+        S.NATIVE.write_text(json.dumps(self.state)); self.save()
+        selected_commit = 'd'*40 if version == '3.0.0' else MAINTENANCE
+        self.source = self.root/'sources'/selected_commit; self.checker.source = self.source
+        return selected_commit
+
+    def test_2_and_3_install_by_default_without_reading_an_answer(self):
+        for version in ('2.0.0', '3.0.0'):
+            with self.subTest(version=version):
+                selected_commit = self.versioned_fixture(version)
+                self.assertTrue(self.offer(expected_commit=self.state['commit']))
+                self.assertEqual(self.loaded.CALLS, ['install'])
+                self.private.PrivateSource.assert_called_with(S.KEYS, S.SOURCES/selected_commit, S.REPO, 'feature/CC', selected_commit)
+
+    def test_manual_install_and_domain_use_the_same_version_route(self):
+        self.versioned_fixture('3.0.0')
+        self.assertTrue(self.run_setup())
+        self.assertEqual(self.loaded.CALLS, ['install'])
+        (self.root/'entry.json').write_text('{}')
+        self.assertTrue(self.run_setup(hostname_only=True))
+        self.assertEqual(self.loaded.CALLS, ['hostname'])
+
+    def test_override_file_digest_is_still_verified_before_execution(self):
+        self.versioned_fixture('3.0.0')
+        self.bodies[S.ENTRY] += b'# unreviewed change\n'
+        with self.assertRaisesRegex(ValueError, 'PINNED_SOURCE_MODULE_DIGEST_MISMATCH'): self.run_setup()
+        self.assertFalse(hasattr(self, 'loaded'))
+
+    def test_invalid_version_overrides_are_rejected_before_fetching(self):
+        variants = [None, {'unknown': {}}, {'1.12.0': {'commit': '0'*40, 'files': self.value['files']}},
+                    {'1.12.0': {'commit': 'd'*40, 'files': {}}},
+                    {'1.12.0': {'commit': 'd'*40, 'files': self.value['files'], 'repository': 'other'}}]
+        for overrides in variants:
+            with self.subTest(overrides=overrides):
+                self.value['version_installers'] = overrides; self.save()
+                with self.assertRaisesRegex(ValueError, 'CLOUDCLI_METADATA_INVALID'): self.run_setup()
         self.acquire.assert_not_called()
 
     def test_one_click_refuses_a_desktop_other_than_the_one_just_installed(self):

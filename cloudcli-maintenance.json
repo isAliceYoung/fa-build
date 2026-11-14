@@ -2,15 +2,28 @@
   "schema": 1,
   "repository": "git@github.com:isAliceYoung/fa.git",
   "branch": "feature/CC",
-  "commit": "620e652912a409c5e743e2185ffd36c5aa033d58",
+  "commit": "afbbeeba223c530a7c9a9cdcd1cb13209d116f7e",
   "entrypoint": "webdesktop-deploy/scripts/cloudcli_install.py",
   "files": {
-    "webdesktop-deploy/scripts/cloudcli_install.py": "663b52336f54143855ea5c51af2f072571eb8e001fc9ad53708f179fdd047aa4",
+    "webdesktop-deploy/scripts/cloudcli_install.py": "3a8372bfcf916337419994706cd7b52f5eecdf04822a623e4feccea12bfdb7e1",
     "webdesktop-deploy/scripts/cloudflare_domain.py": "2eb6fefa248f5c875c7c5a12213413c4f32bb7efed5cbec27e204ecc4b49035e",
     "webdesktop-deploy/scripts/domain_contract.py": "beff48455fa4c4e4b461e01248dade60a1ad73aa2c0de43b96892cee59a47c19",
-    "webdesktop-deploy/cloudcli/cloudcli.patch": "16be6fab4705b48dc5d0ea764a372a4e0ba91cc46caf568ab84231ebfdd13b82"
+    "webdesktop-deploy/cloudcli/cloudcli.patch": "a3c56dd894ebf02552ae17d1d1eb81a0e93f34af0afff1c40b56a0650206828e"
   },
   "supported_versions": {
+    "2.0.0": "a3dae3f95ffcb5260f35411584f60df746947177",
+    "1.12.1": "867f93378b025143ce66ba139ad76c74de490391",
     "3.0.0": "620e652912a409c5e743e2185ffd36c5aa033d58"
+  },
+  "version_installers": {
+    "3.0.0": {
+      "commit": "620e652912a409c5e743e2185ffd36c5aa033d58",
+      "files": {
+        "webdesktop-deploy/scripts/cloudcli_install.py": "663b52336f54143855ea5c51af2f072571eb8e001fc9ad53708f179fdd047aa4",
+        "webdesktop-deploy/scripts/cloudflare_domain.py": "2eb6fefa248f5c875c7c5a12213413c4f32bb7efed5cbec27e204ecc4b49035e",
+        "webdesktop-deploy/scripts/domain_contract.py": "beff48455fa4c4e4b461e01248dade60a1ad73aa2c0de43b96892cee59a47c19",
+        "webdesktop-deploy/cloudcli/cloudcli.patch": "16be6fab4705b48dc5d0ea764a372a4e0ba91cc46caf568ab84231ebfdd13b82"
+      }
+    }
   }
 }
