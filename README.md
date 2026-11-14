@@ -115,6 +115,16 @@ The same command can be run after reconnecting at the Deploy Key y/N prompt. It 
 
 ### Reconnect while waiting for GitHub authorization
 
+**如果已经存在 `/root/fa-build`，请执行 `bash /root/fa-build/install.sh`。**
+
+例如，绑定 Deploy Key 时尚未输入 y/n 就断开连接，重新使用旧的一键安装命令可能出现：
+
+```text
+fatal: destination path '/root/fa-build' already exists and is not an empty directory.
+```
+
+这表示引导目录已经存在，不需要重新克隆，也不要删除原目录或 Deploy Key。若之前已成功克隆，重新连接后在 root 终端执行下面的命令，继续原来的授权和安装流程；若目录或安装脚本不完整，请先检查，不要强行覆盖。
+
 If the clone completed and the SSH connection ended at the y/N prompt, do not clone again. From the existing reviewed checkout run:
 
 ```bash
