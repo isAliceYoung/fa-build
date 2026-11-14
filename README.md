@@ -1,5 +1,9 @@
 # WebDesktop Public Bootstrap
 
+## WebDesktop 3.0.2 and ClaudeWeb 1.0.1
+
+3.0.2 is the default for new installations. After a ClaudeWeb install or update the previous ClaudeWeb program is deleted as soon as the new version answers (a 2.0.0-built one took 713 MB), together with leftovers of the old on-server build; database backups stay. ClaudeWeb 1.0.1 removes the upstream CloudCLI version check and self-update. Update the desktop in Settings → 更新, then ClaudeWeb in its Settings → 关于 → 检查更新.
+
 ## WebDesktop 3.0.1
 
 3.0.1 is the stable 3.0 release and the default for new installations. **Claude 网页版** (ClaudeWeb, CloudCLI UI) is no longer compiled on the VPS: CI builds it once and every VPS installs the prebuilt version pinned in `claudeweb.json` (tag commit and the SHA-256 of every part), fetched with the existing read-only deploy key. Installing ClaudeWeb 1.0.0 (34 MB download, 289 MB unpacked) needs about 0.6 GB of free disk, including a 256 MB reserve, instead of the old 4 GB build area and 2.4 GB of memory.

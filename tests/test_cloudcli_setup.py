@@ -123,13 +123,15 @@ class CloudcliSetup(unittest.TestCase):
     def test_published_default_installs_the_prebuilt_claudeweb(self):
         with patch.object(S, 'ROOT', BASE): value = S.metadata(self.tools)
         catalogue = UI.metadata()
-        self.assertEqual(catalogue['default_version'], '3.0.1')
-        # ClaudeWeb is prebuilt from 3.0.1 on; older desktops are asked to update first.
-        app = catalogue['versions']['3.0.1']['commit']
-        self.assertEqual(value['supported_versions'], {'3.0.1': app})
-        selected = S.installer_for(value, {'commit': app})
-        self.assertEqual(selected['commit'], 'a499ba0424f1b9c1e0cbede47bc85328f1044951')
-        self.assertEqual(set(selected['files']), S.PREBUILT_MODULES)
+        self.assertEqual(catalogue['default_version'], '3.0.2')
+        # ClaudeWeb is prebuilt from 3.0.1 on; older desktops are asked to update first. Both
+        # prebuilt-capable desktops use the 3.0.2 installer, which frees the previous program.
+        apps = {v: catalogue['versions'][v]['commit'] for v in ('3.0.1', '3.0.2')}
+        self.assertEqual(value['supported_versions'], apps)
+        for app in apps.values():
+            selected = S.installer_for(value, {'commit': app})
+            self.assertEqual(selected['commit'], '0a50d7f5b8f347f379792c1a04a1ad6cff89bd6b')
+            self.assertEqual(set(selected['files']), S.PREBUILT_MODULES)
 
     def versioned_fixture(self, version):
         self.value['supported_versions'] = {'2.0.0': APP, '3.0.0': 'e'*40}

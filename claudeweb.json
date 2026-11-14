@@ -1,8 +1,28 @@
 {
   "schema": 1,
   "repository": "git@github.com:isAliceYoung/fa.git",
-  "latest": "1.0.0",
+  "latest": "1.0.1",
   "versions": {
+    "1.0.1": {
+      "tag": "claudeweb-v1.0.1",
+      "commit": "9f46fa1cf6ed7db8109cae5ffd8f560d8d691755",
+      "source_commit": "0a50d7f5b8f347f379792c1a04a1ad6cff89bd6b",
+      "archive": {
+        "name": "claudeweb-1.0.1-linux-x64.tar.xz",
+        "bytes": 36075436,
+        "sha256": "13f3094ff7f91e5dffa8ff14fa9b833b6959dd55d03143d593f027899c338b0c"
+      },
+      "parts": [
+        {
+          "name": "claudeweb-1.0.1-linux-x64.tar.xz.part00",
+          "bytes": 36075436,
+          "sha256": "13f3094ff7f91e5dffa8ff14fa9b833b6959dd55d03143d593f027899c338b0c"
+        }
+      ],
+      "unpacked_bytes": 303091484,
+      "requires_webdesktop": "3.0.1",
+      "notes": "清理：去掉上游 CloudCLI 自带的版本检查（每次打开都会访问上游 GitHub）和在服务器上自我更新的接口；更新只走「关于」页。WebDesktop 3.0.2 起，更新成功后会删除旧版本程序，释放磁盘空间。"
+    },
     "1.0.0": {
       "tag": "claudeweb-v1.0.0",
       "commit": "2c80c58ce0c3537da4e53acee93b2353ab4839de",
