@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shlex
 import socket
 import stat
 import subprocess
@@ -167,7 +168,10 @@ def authorize_source(source,read=input):
         public=source.prepare()
         print('[2/9] GitHub Deploy Key ... READY\n\nPublic key:\n'+public)
     print('\nhttps://github.com/isAliceYoung/fa/settings/keys\n请添加到 Deploy keys，并保持 Allow write access 未勾选。')
-    if not consent(read):print('未授权；没有构建或安装。');return False
+    if not consent(read):
+        print('未授权；没有构建或安装。已生成的 Deploy Key 保留，不需要重新克隆目录或生成密钥。')
+        print('重新连接后继续：bash '+shlex.quote(str(ROOT/'install.sh')))
+        return False
     with source.locked():
         source.verify_local()
         tools.require(source.validate_identity()==public,'KEY_PAIR')

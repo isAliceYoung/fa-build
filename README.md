@@ -106,10 +106,12 @@ Two startup choices are available: the convenience command trusts this official 
 `install.sh` contains the clean environment and explicit local-test installation flags; `bootstrap.sh` contains platform checks, basic dependency preparation and safe diagnostics. It remains root-only, Debian 12 amd64, for a new installation. The convenience command does not require manually editing a public commit:
 
 ```bash
-(command -v git >/dev/null 2>&1 && test -s /etc/ssl/certs/ca-certificates.crt || (apt-get update && apt-get install -y git ca-certificates)) && (test ! -L /root/fa-build && test -d /root/fa-build/.git || git clone -c core.hooksPath=/dev/null -c core.fsmonitor=false https://github.com/isAliceYoung/fa-build.git /root/fa-build) && bash /root/fa-build/install.sh
+(command -v git >/dev/null 2>&1 && test -s /etc/ssl/certs/ca-certificates.crt || (apt-get update && apt-get install -y git ca-certificates)) && (if test -e /root/fa-build || test -L /root/fa-build; then test ! -L /root/fa-build && test ! -L /root/fa-build/.git && test -d /root/fa-build/.git && test ! -L /root/fa-build/install.sh && test -f /root/fa-build/install.sh || { printf '%s\n' 'STOP code=BOOTSTRAP_CHECKOUT_REVIEW_REQUIRED: Existing /root/fa-build is incomplete or unsafe; preserved for review.' >&2; exit 1; }; else git clone -c core.hooksPath=/dev/null -c core.fsmonitor=false https://github.com/isAliceYoung/fa-build.git /root/fa-build; fi) && bash /root/fa-build/install.sh
 ```
 
 On a first run this clones current official public `main`, not an independently pinned bootstrap. On later runs it reuses the existing checkout without pulling, resetting, deleting, or cloning over it. Git/CA preparation is skipped when the tools already exist. The current bootstrap validates root ownership, safe path types/modes, official origin, tracked-file identity and a clean checkout; unknown/modified directories stop for review. Existing older checkouts are not automatically upgraded by this command. To use an independently reviewed bootstrap, use the pinned template below.
+
+The same command can be run after reconnecting at the Deploy Key y/N prompt. It checks the directory before cloning: a complete checkout continues with `install.sh`; an existing file, symlink or incomplete checkout stops with `BOOTSTRAP_CHECKOUT_REVIEW_REQUIRED`, preserving it for review. It does not attempt another clone into an existing directory. A command copied from older instructions that unconditionally runs `git clone ... /root/fa-build` cannot acquire this behavior from an installer update: replace that command with the one above, or run the existing `install.sh` directly.
 
 ### Reconnect while waiting for GitHub authorization
 

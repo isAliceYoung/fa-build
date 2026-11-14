@@ -128,6 +128,27 @@ class Interaction(unittest.TestCase):
             self.assertEqual(source.attempts,2);self.assertEqual(key.read_bytes(),b'nonsecret simulated identity')
             self.assertIn('existing key retained',output.getvalue());self.assertIn('TEST_PUBLIC_FIXTURE_ONLY existing',output.getvalue())
 
+    def test_eof_before_authorization_can_reenter_without_replacing_the_key(self):
+        with tempfile.TemporaryDirectory() as directory:
+            key=Path(directory)/'deploy_key'
+            source=mock.Mock();source.key=key
+            source.locked.side_effect=lambda:contextlib.nullcontext()
+            public='ssh-ed25519 TEST_PUBLIC_FIXTURE_ONLY reconnect'
+            def prepare():
+                key.write_bytes(b'unchanged fixture key');return public
+            def disconnected(_):raise EOFError()
+            source.prepare.side_effect=prepare
+            source.validate_identity.return_value=public
+            source.authorized.side_effect=[ui.private.Failure('AUTHORIZATION','not yet authorized'),None]
+            with contextlib.redirect_stdout(io.StringIO()) as out:
+                self.assertFalse(ui.authorize_source(source,disconnected))
+                self.assertTrue(ui.authorize_source(source,lambda _:'y'))
+            source.prepare.assert_called_once()
+            self.assertEqual(source.authorized.call_count,2)
+            self.assertEqual(key.read_bytes(),b'unchanged fixture key')
+            self.assertIn('install.sh',out.getvalue())
+            self.assertIn('WAITING FOR AUTHORIZATION',out.getvalue())
+
     def test_key_identity_cannot_change_while_waiting_for_consent(self):
         with tempfile.TemporaryDirectory() as directory:
             source=mock.Mock();source.key=Path(directory)/'deploy_key';source.key.write_bytes(b'fixture')
@@ -320,6 +341,82 @@ class CredentialDisplay(unittest.TestCase):
 
     def test_nonroot_cannot_display_initial_credentials(self):
         with self.assertRaisesRegex(ValueError,'ROOT_REQUIRED'):self.display(root=False)
+
+
+class StartupCommand(unittest.TestCase):
+    """Execute the documented one-liner with offline tools and a temporary checkout."""
+    def run_command(self,kind,repeat=1,ca=True):
+        candidates=[shutil.which('bash')]
+        git=shutil.which('git')
+        if os.name=='nt' and git:
+            candidates.insert(0,str(Path(git).resolve().parent.parent/'bin/bash.exe'))
+        bash=next((p for p in candidates if p and Path(p).is_file()),None)
+        if not bash:self.skipTest('Bash unavailable')
+        command=next(line for line in (ROOT/'README.md').read_text(encoding='utf-8').splitlines()
+                     if line.startswith('(command -v git'))
+        command=command.replace('/root/fa-build','"$LAUNCH_CHECKOUT"').replace('/etc/ssl/certs/ca-certificates.crt','"$LAUNCH_CA"')
+        with tempfile.TemporaryDirectory(prefix='reconnect-command-') as temporary:
+            root=Path(temporary);checkout=root/'checkout';calls=root/'calls';calls.write_text('')
+            certificate=root/'ca';certificate.write_text('fixture CA' if ca else '')
+            template=root/'fixture.sh';template.write_bytes(b'printf "install\\n" >> "$LAUNCH_CALLS"\n')
+            if kind in ('complete','incomplete','empty'):
+                checkout.mkdir()
+                if kind!='empty':(checkout/'.git').mkdir()
+                if kind=='complete':shutil.copyfile(template,checkout/'install.sh')
+            elif kind=='file':checkout.write_text('preserve unrelated file')
+            elif kind=='symlink':
+                target=root/'unrelated';target.mkdir();checkout.symlink_to(target,target_is_directory=True)
+            script='''
+git() {
+  printf 'git:%s\\n' "$*" >> "$LAUNCH_CALLS"
+  test "$1" = clone || return 91
+  test ! -e "$LAUNCH_CHECKOUT" || return 92
+  mkdir -p "$LAUNCH_CHECKOUT/.git" && cp "$LAUNCH_TEMPLATE" "$LAUNCH_CHECKOUT/install.sh"
+}
+apt-get() { printf 'apt:%s\\n' "$*" >> "$LAUNCH_CALLS"; }
+''' + command
+            env=dict(os.environ,LAUNCH_CHECKOUT=checkout.as_posix(),LAUNCH_CA=certificate.as_posix(),
+                     LAUNCH_CALLS=calls.as_posix(),LAUNCH_TEMPLATE=template.as_posix())
+            results=[subprocess.run([bash,'--noprofile','--norc','-c',script],env=env,capture_output=True,timeout=15)
+                     for _ in range(repeat)]
+            log=calls.read_text().splitlines()
+            if kind=='file':self.assertEqual(checkout.read_text(),'preserve unrelated file')
+            if kind in ('incomplete','empty'):self.assertFalse((checkout/'install.sh').exists())
+            if kind=='complete':self.assertEqual((checkout/'install.sh').read_bytes(),template.read_bytes())
+        return results,log
+
+    def test_first_launch_clones_once_and_second_launch_reuses_it(self):
+        results,log=self.run_command('absent',repeat=2)
+        self.assertEqual([r.returncode for r in results],[0,0],results)
+        self.assertEqual(sum(line.startswith('git:clone ') for line in log),1)
+        self.assertEqual(log.count('install'),2)
+        self.assertFalse(any(line.startswith('apt:') for line in log))
+
+    def test_reconnected_complete_checkout_does_not_clone_or_prepare_packages(self):
+        results,log=self.run_command('complete',repeat=2)
+        self.assertEqual([r.returncode for r in results],[0,0],results)
+        self.assertEqual(log,['install','install'])
+
+    def test_unknown_or_incomplete_destinations_stop_before_clone_or_install(self):
+        for kind in ('incomplete','empty','file'):
+            with self.subTest(kind=kind):
+                results,log=self.run_command(kind)
+                self.assertNotEqual(results[0].returncode,0)
+                self.assertIn(b'BOOTSTRAP_CHECKOUT_REVIEW_REQUIRED',results[0].stderr)
+                self.assertEqual(log,[])
+
+    @unittest.skipUnless(os.name=='posix','POSIX symlink creation')
+    def test_symlink_destination_is_preserved_without_execution(self):
+        results,log=self.run_command('symlink')
+        self.assertNotEqual(results[0].returncode,0)
+        self.assertIn(b'BOOTSTRAP_CHECKOUT_REVIEW_REQUIRED',results[0].stderr)
+        self.assertEqual(log,[])
+
+    def test_missing_ca_still_prepares_the_required_packages(self):
+        results,log=self.run_command('absent',ca=False)
+        self.assertEqual(results[0].returncode,0,results[0].stderr)
+        self.assertEqual(log[:2],['apt:update','apt:install -y git ca-certificates'])
+        self.assertEqual(log[-1],'install')
 
 
 class CheckoutReuse(unittest.TestCase):
