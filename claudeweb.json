@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "repository": "git@github.com:isAliceYoung/fa.git",
+  "latest": "1.0.0",
+  "versions": {
+    "1.0.0": {
+      "tag": "claudeweb-v1.0.0",
+      "commit": "2c80c58ce0c3537da4e53acee93b2353ab4839de",
+      "source_commit": "245b7f8e400cfe0ebc3db3641c889d4ff1f2a40e",
+      "archive": {
+        "name": "claudeweb-1.0.0-linux-x64.tar.xz",
+        "bytes": 36074396,
+        "sha256": "92db300b29910e024b609f295c245dae81595877122708429fd9b1a0de94683c"
+      },
+      "parts": [
+        {
+          "name": "claudeweb-1.0.0-linux-x64.tar.xz.part00",
+          "bytes": 36074396,
+          "sha256": "92db300b29910e024b609f295c245dae81595877122708429fd9b1a0de94683c"
+        }
+      ],
+      "unpacked_bytes": 303084483,
+      "requires_webdesktop": "3.0.1",
+      "notes": "首个预编译版本：安装和更新不再在服务器上编译。包含备份与恢复、对话快捷导航和在「关于」页直接更新。"
+    }
+  }
+}

@@ -120,19 +120,16 @@ class CloudcliSetup(unittest.TestCase):
         self.assertIn('没有尝试构建', self.output.getvalue())
         self.acquire.assert_not_called()
 
-    def test_published_default_and_test_release_both_have_pinned_installers(self):
+    def test_published_default_installs_the_prebuilt_claudeweb(self):
         with patch.object(S, 'ROOT', BASE): value = S.metadata(self.tools)
         catalogue = UI.metadata()
-        self.assertEqual(catalogue['default_version'], '2.0.0')
-        self.assertIn(catalogue['default_version'], value['supported_versions'])
-        for version in ('1.12.1', '2.0.0', '3.0.0'):
-            with self.subTest(version=version):
-                app = catalogue['versions'][version]['commit']
-                self.assertEqual(value['supported_versions'][version], app)
-                selected = S.installer_for(value, {'commit': app})
-                expected = '620e652912a409c5e743e2185ffd36c5aa033d58' if version == '3.0.0' else 'afbbeeba223c530a7c9a9cdcd1cb13209d116f7e'
-                self.assertEqual(selected['commit'], expected)
-                self.assertEqual(set(selected['files']), S.MODULES)
+        self.assertEqual(catalogue['default_version'], '3.0.1')
+        # ClaudeWeb is prebuilt from 3.0.1 on; older desktops are asked to update first.
+        app = catalogue['versions']['3.0.1']['commit']
+        self.assertEqual(value['supported_versions'], {'3.0.1': app})
+        selected = S.installer_for(value, {'commit': app})
+        self.assertEqual(selected['commit'], 'a499ba0424f1b9c1e0cbede47bc85328f1044951')
+        self.assertEqual(set(selected['files']), S.PREBUILT_MODULES)
 
     def versioned_fixture(self, version):
         self.value['supported_versions'] = {'2.0.0': APP, '3.0.0': 'e'*40}

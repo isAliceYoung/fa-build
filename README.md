@@ -1,5 +1,14 @@
 # WebDesktop Public Bootstrap
 
+## WebDesktop 3.0.1
+
+3.0.1 is the stable 3.0 release and the default for new installations. **Claude 网页版** (ClaudeWeb, CloudCLI UI) is no longer compiled on the VPS: CI builds it once and every VPS installs the prebuilt version pinned in `claudeweb.json` (tag commit and the SHA-256 of every part), fetched with the existing read-only deploy key. Installing ClaudeWeb 1.0.0 (34 MB download, 289 MB unpacked) needs about 0.6 GB of free disk, including a 256 MB reserve, instead of the old 4 GB build area and 2.4 GB of memory.
+
+- **Fresh installation**: the one-click installation installs 3.0.1 and the prebuilt ClaudeWeb by default.
+- **From 2.0.0**: update WebDesktop to 3.0.1 in Settings → 更新, then use the 「Claude 网页版」 row on the same page (「升级为预编译版本」 or 「安装 Claude 网页版」); no SSH is needed. Conversations, settings and logins are kept.
+- **Later ClaudeWeb updates**: inside ClaudeWeb, Settings → 关于 → 检查更新. Root installs only a newer version registered in `claudeweb.json`, backs up its database first and restores the previous version if the new one does not start.
+- `bash /root/fa-build/install.sh cloudcli` still works and downloads the prebuilt version; ClaudeWeb requires WebDesktop 3.0.1 or newer.
+
 ## WebDesktop 2.0.0
 
 2.0.0 is the stable release of **Claude 网页版** (CloudCLI UI) and the default for new installations. The one-click installation now installs ClaudeWeb (CloudCLI UI) automatically after the Claude CLI and the existing domain flow; there is no separate installation question; on an installed VPS, update to 2.0.0 in Settings, update the local checkout with `git -C /root/fa-build -c core.hooksPath=/dev/null -c core.fsmonitor=false pull --ff-only`, then run `bash /root/fa-build/install.sh cloudcli`. CMCP 4.18.0 can open it directly. Domain binding supports 2.0.0. The section below describes the feature, first published as the 1.12.1 test release.
@@ -26,7 +35,7 @@ WebDesktop 与 ClaudeWeb 使用同一份网页访问密码，域名与隧道访�
 bash /root/fa-build/install.sh cloudcli
 ```
 
-It builds the pinned upstream commit with the WebDesktop patch from the reviewed fa commit in `cloudcli-maintenance.json` (every file checked by SHA-256 first), runs it as the terminal user inside the terminal sandbox, and puts a **Claude 网页版** icon on the desktop. The icon opens it with a one-time ticket. Without a domain it is at `http://127.0.0.1:3001` (forward port 3001 with SSH like port 3000); with a bound domain, `install.sh cloudcli` (or later `install.sh cloudcli-domain`) asks for a temporary Cloudflare token and adds `<name>-claude.<zone>` to the same tunnel. The token is read hidden and never saved. `install.sh cloudcli` on a real VPS works (s-irom-01); the one-click flow below and the CloudCLI hostname on real Cloudflare are not verified yet.
+From 3.0.1 it installs the prebuilt ClaudeWeb pinned in `claudeweb.json` using the installer from the reviewed fa commit in `cloudcli-maintenance.json` (every file checked by SHA-256 first; earlier versions built the pinned upstream commit with the WebDesktop patch), runs it as the terminal user inside the terminal sandbox, and puts a **Claude 网页版** icon on the desktop. The icon opens it with a one-time ticket. Without a domain it is at `http://127.0.0.1:3001` (forward port 3001 with SSH like port 3000); with a bound domain, `install.sh cloudcli` (or later `install.sh cloudcli-domain`) asks for a temporary Cloudflare token and adds `<name>-claude.<zone>` to the same tunnel. The token is read hidden and never saved. `install.sh cloudcli` on a real VPS works (s-irom-01); the one-click flow below and the CloudCLI hostname on real Cloudflare are not verified yet.
 
 For supported versions, the current one-click entry installs ClaudeWeb by default after the Claude CLI and domain binding and before the login details. The domain questions (including skip and later binding) are unchanged. A failed/interrupted ClaudeWeb installation preserves the installed desktop and reports the retry command; older versions without the entrance are unchanged. Domain binding now runs the reviewed fa commit `6078701`, which also accepts 1.12.1 and 2.0.0 and reads the Cloudflare Account ID and Zone ID hidden, like the API token (a malformed ID asks again).
 

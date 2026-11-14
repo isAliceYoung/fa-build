@@ -15,12 +15,14 @@ DOMAIN=CLAUDE|{'scripts/domain_setup.py','domain-maintenance.json','tests/test_d
 PASSWORD=DOMAIN|{'password.sh'}
 CLI=PASSWORD|{'scripts/claude_cli.py','tests/test_claude_cli.py'}
 CLOUDCLI=CLI|{'scripts/cloudcli_setup.py','tests/test_cloudcli_setup.py','cloudcli-maintenance.json'}
-ALLOWED=CLOUDCLI|{'tests/test_access_summary.py'}
+ACCESS=CLOUDCLI|{'tests/test_access_summary.py'}
+# The prebuilt ClaudeWeb catalogue (3.0.1): versions, commits and digests only, no code.
+ALLOWED=ACCESS|{'claudeweb.json','tests/test_claudeweb_catalogue.py'}
 HISTORICAL=PREVIOUS-{'scripts/diagnostics.py'}
 PATTERNS=[rb'-----BEGIN (?:(?:OPENSSH|RSA|EC|DSA) )?PRIVATE KEY-----',rb'gh[pousr]_[A-Za-z0-9]{30,}',
           rb'github_pat_[A-Za-z0-9_]{30,}',rb'(?m)^(?:DATABASE_URL|AUTH_KEY|DESKTOP_PASSWORD|ADMIN_PASSWORD)=.+']
 def check(files):
-    if set(files) not in (ALLOWED,CLOUDCLI,CLI,PASSWORD,DOMAIN,CLAUDE,VERSION_SELECTION,PREVIOUS,HISTORICAL):raise ValueError('Unexpected or missing public file paths')
+    if set(files) not in (ALLOWED,ACCESS,CLOUDCLI,CLI,PASSWORD,DOMAIN,CLAUDE,VERSION_SELECTION,PREVIOUS,HISTORICAL):raise ValueError('Unexpected or missing public file paths')
     total=0
     for name,data in files.items():
         total+=len(data)

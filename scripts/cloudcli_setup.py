@@ -18,6 +18,9 @@ NATIVE = Path('/etc/webdesktop-isolated/state.json')
 ENTRY = 'webdesktop-deploy/scripts/cloudcli_install.py'
 MODULES = {ENTRY, 'webdesktop-deploy/scripts/cloudflare_domain.py', 'webdesktop-deploy/scripts/domain_contract.py',
            'webdesktop-deploy/cloudcli/cloudcli.patch'}
+# From 3.0.1 the installer downloads the prebuilt ClaudeWeb instead of compiling it; the download
+# code and the deploy-key Git helper it uses are pinned as well.
+PREBUILT_MODULES = MODULES | {'webdesktop-deploy/scripts/claudeweb_release.py', 'webdesktop-deploy/scripts/private_repo.py'}
 
 
 def metadata(tools):
@@ -33,7 +36,7 @@ def metadata(tools):
                   and type(value['schema']) is int and value['schema'] == 1 and value['repository'] == REPO
                   and value['branch'] == 'feature/CC' and value['entrypoint'] == ENTRY
                   and isinstance(value['commit'], str) and re.fullmatch('[0-9a-f]{40}', value['commit']) and value['commit'] != '0'*40
-                  and isinstance(value['files'], dict) and set(value['files']) == MODULES
+                  and isinstance(value['files'], dict) and set(value['files']) in (MODULES, PREBUILT_MODULES)
                   and all(isinstance(d, str) and re.fullmatch('[0-9a-f]{64}', d) for d in value['files'].values())
                   and isinstance(value['supported_versions'], dict) and bool(value['supported_versions'])
                   and all(isinstance(v, str) and re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+', v) and isinstance(c, str)
@@ -45,7 +48,7 @@ def metadata(tools):
         tools.require(isinstance(override, dict) and set(override) == {'commit', 'files'}
                       and isinstance(override['commit'], str) and re.fullmatch('[0-9a-f]{40}', override['commit'])
                       and override['commit'] != '0'*40 and isinstance(override['files'], dict)
-                      and set(override['files']) == MODULES
+                      and set(override['files']) in (MODULES, PREBUILT_MODULES)
                       and all(isinstance(d, str) and re.fullmatch('[0-9a-f]{64}', d) for d in override['files'].values()),
                       'CLOUDCLI_METADATA_INVALID')
     return value
@@ -92,7 +95,7 @@ def offer(tools, private, acquire, read=input, expected_commit=None):
     if selected is not value: checker = installer_checker(private, selected)
     value = selected
     print('正在默认安装 ClaudeWeb（CloudCLI UI），作为 WebDesktop 的集成组件。')
-    print('下载并构建约 5-15 分钟；需要磁盘至少空出 4 GB、内存加 swap 至少 2.4 GB。')
+    print('下载预编译版本，通常 1-3 分钟；不在服务器上编译。')
     return install(tools, value, checker, acquire)
 
 
