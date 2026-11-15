@@ -1,8 +1,28 @@
 {
   "schema": 1,
   "repository": "git@github.com:isAliceYoung/fa.git",
-  "latest": "1.0.3",
+  "latest": "1.0.4",
   "versions": {
+    "1.0.4": {
+      "tag": "claudeweb-v1.0.4",
+      "commit": "991e237679bb477a6aa24f71428229d0a4fe485a",
+      "source_commit": "77e7c10b119a9fa3cb61744a6f8383400e79749d",
+      "archive": {
+        "name": "claudeweb-1.0.4-linux-x64.tar.xz",
+        "bytes": 36459824,
+        "sha256": "877af569d86f5e6405b418b60c78534fbc10d33826986b0fa95f4f6fd2283e35"
+      },
+      "parts": [
+        {
+          "name": "claudeweb-1.0.4-linux-x64.tar.xz.part00",
+          "bytes": 36459824,
+          "sha256": "877af569d86f5e6405b418b60c78534fbc10d33826986b0fa95f4f6fd2283e35"
+        }
+      ],
+      "unpacked_bytes": 305593480,
+      "requires_webdesktop": "3.0.3",
+      "notes": "修复后台任务运行期间再发消息或点停止后，旧的 Claude 进程在后台继续存活：它的迟到回复会突然出现在对话里，并和新进程同时写入同一个会话，导致对话分叉、消息看起来丢失；也修复停止后下一轮可能一直显示正在运行。现在发新消息或点停止时，上一轮仍在运行的后台工作（后台命令、agent、监控脚本等）会被结束，旧进程几秒内退出。需要 WebDesktop 3.0.3。"
+    },
     "1.0.3": {
       "tag": "claudeweb-v1.0.3",
       "commit": "c6e3fad66da7d3326f90ccf9b83fce22e70960e2",
