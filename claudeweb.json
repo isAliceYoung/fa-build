@@ -1,8 +1,28 @@
 {
   "schema": 1,
   "repository": "git@github.com:isAliceYoung/fa.git",
-  "latest": "1.0.4",
+  "latest": "1.0.5",
   "versions": {
+    "1.0.5": {
+      "tag": "claudeweb-v1.0.5",
+      "commit": "eb88437ede483c81a8d8df0296c5c8f570c3c722",
+      "source_commit": "20fde65b224aa9a66ab4c5733ecbc87cf55d5442",
+      "archive": {
+        "name": "claudeweb-1.0.5-linux-x64.tar.xz",
+        "bytes": 36456092,
+        "sha256": "8a6c784cf33f340ee8974d56f9ec5b36e8eb743f63400713d65caf68e4165470"
+      },
+      "parts": [
+        {
+          "name": "claudeweb-1.0.5-linux-x64.tar.xz.part00",
+          "bytes": 36456092,
+          "sha256": "8a6c784cf33f340ee8974d56f9ec5b36e8eb743f63400713d65caf68e4165470"
+        }
+      ],
+      "unpacked_bytes": 305755073,
+      "requires_webdesktop": "3.0.3",
+      "notes": "新增 SDK 原生「下一轮提示建议」：完成后在空输入框浅灰显示，Tab、右方向键或点击可接受，Esc 或输入可隐藏，接受不会自动发送；通用设置可关闭。归档对话从侧栏移到设置「任务与会话」，支持恢复和确认后删除，后台索引不再自动取消归档。任务看板新增返回会话并跟随应用主题；/memory 自动创建缺失的项目 CLAUDE.md 并打开编辑器，保留已有内容。后台任务运行中发消息直接加入队列，可在卡片上「打断并发送」。额度圆环展示套餐、重置时间和各窗口用量，并可跳转设置中的额度栏目。回复下方显示完成时间及悬停时的精确时间，用户消息操作在悬停时显示。需要 WebDesktop 3.0.3。"
+    },
     "1.0.4": {
       "tag": "claudeweb-v1.0.4",
       "commit": "991e237679bb477a6aa24f71428229d0a4fe485a",
