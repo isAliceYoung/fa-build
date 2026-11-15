@@ -1,14 +1,22 @@
 # WebDesktop Public Bootstrap
 
+## WebDesktop 3.0.3 and ClaudeWeb 1.0.3
+
+**3.0.3 is the default for new installations.** ClaudeWeb 1.0.3 is registered as the latest prebuilt runtime and requires WebDesktop 3.0.3. Update WebDesktop in Settings → 更新 first, then ClaudeWeb in Settings → 关于 → 检查更新. On WebDesktop 3.0.1 / 3.0.2 the installer continues to select compatible ClaudeWeb 1.0.2; existing version entries remain available.
+
+ClaudeWeb's globe button opens the desktop's existing Chromium in the right panel, including over SSH. Opening it on one side takes it over from the other. Claude and terminal commands run as that same user and can control the logged-in browser. The browser and terminal keep running after Back or collapsing the panel; Close ends them. Code's new-chat home adds token history and a bottom project picker, Chat adds a greeting and larger input, and each mode has its own sidebar list while Pinned and Recent remain shared. Switching modes restores the previous conversation.
+
+Both published releases and their SHA-256 digests were checked against the fixed source/runtime tag commits. ClaudeWeb's runtime build and tests passed in CI. The WebDesktop validation run completed its executed test steps, but artifact uploads failed because the GitHub artifact storage quota was exceeded; the dependent jobs and the build's later HTTP readiness step were skipped. A real VPS upgrade and real browser/clipboard acceptance for this version are not yet verified.
+
 ## WebDesktop 3.0.2 and ClaudeWeb 1.0.1
 
-3.0.2 is the default for new installations. After a ClaudeWeb install or update the previous ClaudeWeb program is deleted as soon as the new version answers (a 2.0.0-built one took 713 MB), together with leftovers of the old on-server build; database backups stay. ClaudeWeb 1.0.1 removes the upstream CloudCLI version check and self-update. Update the desktop in Settings → 更新, then ClaudeWeb in its Settings → 关于 → 检查更新.
+3.0.2 was the previous default for new installations. After a ClaudeWeb install or update the previous ClaudeWeb program is deleted as soon as the new version answers (a 2.0.0-built one took 713 MB), together with leftovers of the old on-server build; database backups stay. ClaudeWeb 1.0.1 removes the upstream CloudCLI version check and self-update. Update the desktop in Settings → 更新, then ClaudeWeb in its Settings → 关于 → 检查更新.
 
 ## WebDesktop 3.0.1
 
-3.0.1 is the stable 3.0 release and the default for new installations. **Claude 网页版** (ClaudeWeb, CloudCLI UI) is no longer compiled on the VPS: CI builds it once and every VPS installs the prebuilt version pinned in `claudeweb.json` (tag commit and the SHA-256 of every part), fetched with the existing read-only deploy key. Installing ClaudeWeb 1.0.0 (34 MB download, 289 MB unpacked) needs about 0.6 GB of free disk, including a 256 MB reserve, instead of the old 4 GB build area and 2.4 GB of memory.
+3.0.1 introduced the stable 3.0 release and was the default at that time. **Claude 网页版** (ClaudeWeb, CloudCLI UI) is no longer compiled on the VPS: CI builds it once and every VPS installs the prebuilt version pinned in `claudeweb.json` (tag commit and the SHA-256 of every part), fetched with the existing read-only deploy key. Installing ClaudeWeb 1.0.0 (34 MB download, 289 MB unpacked) needs about 0.6 GB of free disk, including a 256 MB reserve, instead of the old 4 GB build area and 2.4 GB of memory.
 
-- **Fresh installation**: the one-click installation installs 3.0.1 and the prebuilt ClaudeWeb by default.
+- **Fresh installation**: the one-click installation installs the current default WebDesktop and the compatible prebuilt ClaudeWeb.
 - **From 2.0.0**: update WebDesktop to 3.0.1 in Settings → 更新, then use the 「Claude 网页版」 row on the same page (「升级为预编译版本」 or 「安装 Claude 网页版」); no SSH is needed. Conversations, settings and logins are kept.
 - **Later ClaudeWeb updates**: inside ClaudeWeb, Settings → 关于 → 检查更新. Root installs only a newer version registered in `claudeweb.json`, backs up its database first and restores the previous version if the new one does not start.
 - `bash /root/fa-build/install.sh cloudcli` still works and downloads the prebuilt version; ClaudeWeb requires WebDesktop 3.0.1 or newer.
@@ -43,7 +51,7 @@ From 3.0.1 it installs the prebuilt ClaudeWeb pinned in `claudeweb.json` using t
 
 For supported versions, the current one-click entry installs ClaudeWeb by default after the Claude CLI and domain binding and before the login details. The domain questions (including skip and later binding) are unchanged. A failed/interrupted ClaudeWeb installation preserves the installed desktop and reports the retry command; older versions without the entrance are unchanged. Domain binding now runs the reviewed fa commit `6078701`, which also accepts 1.12.1 and 2.0.0 and reads the Cloudflare Account ID and Zone ID hidden, like the API token (a malformed ID asks again).
 
-WebDesktop **2.0.0** (the default), **1.12.1**, and test release **3.0.0** all install ClaudeWeb by default, without a separate installation y/n question. Registering a test release must not remove the stable version's installation route. `cloudcli-maintenance.json` keeps the original reviewed installer for 2.0.0/1.12.1 and selects the separately pinned 3.0.0 installer through `version_installers`; both routes verify every helper digest. A version without a registered route prints an explicit skip reason. Updating WebDesktop through its webpage does not install a missing ClaudeWeb component: after updating this bootstrap checkout with `git -C /root/fa-build -c core.hooksPath=/dev/null -c core.fsmonitor=false pull --ff-only`, run `bash /root/fa-build/install.sh cloudcli` to install it for the version currently installed.
+Historically WebDesktop **2.0.0**, **1.12.1**, and test release **3.0.0** used version-specific on-server ClaudeWeb builds, without a separate installation y/n question. The current prebuilt installer supports WebDesktop 3.0.1 and newer; older desktops must update first. Registering a new release must retain existing supported version mappings and verify every helper digest. A version without a registered route prints an explicit skip reason. After updating this bootstrap checkout with `git -C /root/fa-build -c core.hooksPath=/dev/null -c core.fsmonitor=false pull --ff-only`, `bash /root/fa-build/install.sh cloudcli` installs or updates the compatible prebuilt component.
 
 ## WebDesktop 1.11.2
 
@@ -174,7 +182,11 @@ After GitHub read authorization, the bootstrap fetches the latest official versi
 
 | Input | Fixed commit | Installer |
 | --- | --- | --- |
-| `2.0.0` | `a3dae3f95ffcb5260f35411584f60df746947177` (`v2.0.0`) | Claude 网页版 (CloudCLI UI), installed by default by the one-click entry; CMCP 4.18.0 sign-in. Default. |
+| `3.0.3` | `b93409dcdfeb9c32aff15630886b4950e47cfec0` (`v3.0.3`) | Current default. ClaudeWeb 1.0.3, shared desktop browser, Code / Chat homes and usage dashboard. |
+| `3.0.2` | `0a50d7f5b8f347f379792c1a04a1ad6cff89bd6b` (`v3.0.2`) | Prebuilt ClaudeWeb and cleanup of replaced programs. |
+| `3.0.1` | `a499ba0424f1b9c1e0cbede47bc85328f1044951` (`v3.0.1`) | First stable prebuilt ClaudeWeb installation. |
+| `3.0.0` | `620e652912a409c5e743e2185ffd36c5aa033d58` (`v3.0.0`) | **测试版，请勿安装。** Not the default. |
+| `2.0.0` | `a3dae3f95ffcb5260f35411584f60df746947177` (`v2.0.0`) | Historical Claude 网页版 (CloudCLI UI) and CMCP 4.18.0 sign-in. |
 | `1.12.1` | `867f93378b025143ce66ba139ad76c74de490391` (`v1.12.1`) | **测试版，请勿安装。** Claude 网页版 (CloudCLI UI); not the default. |
 | `1.11.2` | `370bc4125f3183a0014021ac96c78bdcf213d769` (`v1.11.2`) | Reads a public repository without the Deploy Key. |
 | `1.11.1` | `50cbbd1565cdb1f2d006b5b897f76e290ca956a4` (`v1.11.1`) | Automatic cleanup after a successful update. |

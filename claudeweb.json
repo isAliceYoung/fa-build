@@ -1,8 +1,28 @@
 {
   "schema": 1,
   "repository": "git@github.com:isAliceYoung/fa.git",
-  "latest": "1.0.2",
+  "latest": "1.0.3",
   "versions": {
+    "1.0.3": {
+      "tag": "claudeweb-v1.0.3",
+      "commit": "c6e3fad66da7d3326f90ccf9b83fce22e70960e2",
+      "source_commit": "b93409dcdfeb9c32aff15630886b4950e47cfec0",
+      "archive": {
+        "name": "claudeweb-1.0.3-linux-x64.tar.xz",
+        "bytes": 36458140,
+        "sha256": "1adfa16a5b30e91e83bf05da1477b108509ad85bc7d37fd6c1d5f2ded86523bf"
+      },
+      "parts": [
+        {
+          "name": "claudeweb-1.0.3-linux-x64.tar.xz.part00",
+          "bytes": 36458140,
+          "sha256": "1adfa16a5b30e91e83bf05da1477b108509ad85bc7d37fd6c1d5f2ded86523bf"
+        }
+      ],
+      "unpacked_bytes": 305547358,
+      "requires_webdesktop": "3.0.3",
+      "notes": "右上角新增「浏览器」（地球图标）：直接使用桌面上的同一个 Chromium，SSH 访问也能用；在这里打开会把浏览器从桌面窗口接过来，反之亦然。复制粘贴与桌面一致（文字和 PNG 图片）。右上角的终端和浏览器点「返回」后继续在后台运行，再点图标回到原来的画面，只有点「关闭」才结束。Code 新聊天首页显示用量统计（概览 / 模型 / 额度，全部 / 30 天 / 7 天），项目选择移到底部输入框左侧，未选项目时默认使用 /home/wdguest/Code。Chat 新聊天页显示问候语，输入框改为两行布局。侧栏按模式分开：Code 只显示项目，Chat 只显示聊天，置顶和最近共用；切换 Chat / Code 会回到该模式上次打开的对话。进入 Code 首页时右栏平滑收起，连接器默认收起。修复已是最新版本时点更新提示「更新失败（CLAUDEWEB_NOT_NEWER）」。需要 WebDesktop 3.0.3。"
+    },
     "1.0.2": {
       "tag": "claudeweb-v1.0.2",
       "commit": "cf5d9f4fe449a07b6bbf6edd86ed985fed64b42a",
