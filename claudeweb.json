@@ -1,8 +1,28 @@
 {
   "schema": 1,
   "repository": "git@github.com:isAliceYoung/fa.git",
-  "latest": "1.0.1",
+  "latest": "1.0.2",
   "versions": {
+    "1.0.2": {
+      "tag": "claudeweb-v1.0.2",
+      "commit": "cf5d9f4fe449a07b6bbf6edd86ed985fed64b42a",
+      "source_commit": "a6d7cb230e59bd1a9aa2b33131098d1272750cf0",
+      "archive": {
+        "name": "claudeweb-1.0.2-linux-x64.tar.xz",
+        "bytes": 36118260,
+        "sha256": "3e10640cd3d799ecd3e8d4c2e3dbb7912178163870fecc66187c848422ae3bc5"
+      },
+      "parts": [
+        {
+          "name": "claudeweb-1.0.2-linux-x64.tar.xz.part00",
+          "bytes": 36118260,
+          "sha256": "3e10640cd3d799ecd3e8d4c2e3dbb7912178163870fecc66187c848422ae3bc5"
+        }
+      ],
+      "unpacked_bytes": 303430317,
+      "requires_webdesktop": "3.0.1",
+      "notes": "新增「定时任务」（侧边栏「新聊天」下方）：到点在所选项目里新开对话运行提示词，服务器上执行，关掉浏览器也会跑；无人确认时默认只自动允许改文件。修复从 2.0.0 升级的机器上 TaskMaster 显示未安装，以及点「新聊天」时侧栏 wdguest 项目被选中展开。界面名称改为 ClaudeWeb，去掉 CloudCLI 图标；顶部和输入框的按钮改为白色。无人值守的运行（定时任务、Agent 接口）遇到需要确认的操作会立即拒绝，不再卡住等待。"
+    },
     "1.0.1": {
       "tag": "claudeweb-v1.0.1",
       "commit": "9f46fa1cf6ed7db8109cae5ffd8f560d8d691755",
