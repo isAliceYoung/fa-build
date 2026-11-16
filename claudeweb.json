@@ -1,8 +1,28 @@
 {
   "schema": 1,
   "repository": "git@github.com:isAliceYoung/fa.git",
-  "latest": "1.0.6",
+  "latest": "1.0.7",
   "versions": {
+    "1.0.7": {
+      "tag": "claudeweb-v1.0.7",
+      "commit": "b22e137750013fc5b922c260907bcf40312e4e76",
+      "source_commit": "815832fc6a915a228357cec583f2ed5603773d79",
+      "archive": {
+        "name": "claudeweb-1.0.7-linux-x64.tar.xz",
+        "bytes": 36506020,
+        "sha256": "68fce75dede280f1ec992f4d714298b5846bb7f442fc02f617d90dc163eb3f7c"
+      },
+      "parts": [
+        {
+          "name": "claudeweb-1.0.7-linux-x64.tar.xz.part00",
+          "bytes": 36506020,
+          "sha256": "68fce75dede280f1ec992f4d714298b5846bb7f442fc02f617d90dc163eb3f7c"
+        }
+      ],
+      "unpacked_bytes": 306001562,
+      "requires_webdesktop": "3.0.3",
+      "notes": "一轮对话改了文件后，回复下方显示改动汇总卡片：已编辑的文件和增减行数，点击文件在右侧「改动」面板查看逐行差异（行号、折叠未修改的行）；可在设置「任务与会话」中关闭。回复下方新增「重新生成」。侧栏空的「置顶」「聊天」「最近」显示淡色提示。顶栏首页显示 Chat / Code，会话中显示会话名（Code 模式附项目名），点击可直接改名。侧栏、顶栏、输入框周围和右侧面板的文字不再能被拖选，对话内容和输入框不受影响。设置中归档的项目也可删除（项目文件夹保留）。需要 WebDesktop 3.0.3。"
+    },
     "1.0.6": {
       "tag": "claudeweb-v1.0.6",
       "commit": "c1e63ed4d8d6bf60b72b0a249255004a07b31a63",
