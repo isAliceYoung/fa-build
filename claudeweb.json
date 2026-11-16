@@ -1,8 +1,28 @@
 {
   "schema": 1,
   "repository": "git@github.com:isAliceYoung/fa.git",
-  "latest": "1.0.8",
+  "latest": "1.0.9",
   "versions": {
+    "1.0.9": {
+      "tag": "claudeweb-v1.0.9",
+      "commit": "e770fbbc3c61fc191b96b2c0528fc500c83992f3",
+      "source_commit": "9ca1ebb078345a1b75003246ac9f69f963d8e554",
+      "archive": {
+        "name": "claudeweb-1.0.9-linux-x64.tar.xz",
+        "bytes": 36658080,
+        "sha256": "c2dd6589b59ed6cf57b01682ceb019859d57b893c921e3c55bc8257d8f71a3e7"
+      },
+      "parts": [
+        {
+          "name": "claudeweb-1.0.9-linux-x64.tar.xz.part00",
+          "bytes": 36658080,
+          "sha256": "c2dd6589b59ed6cf57b01682ceb019859d57b893c921e3c55bc8257d8f71a3e7"
+        }
+      ],
+      "unpacked_bytes": 306423192,
+      "requires_webdesktop": "3.0.3",
+      "notes": "会话新增交互画面：完整 HTML/SVG 回复及生成的 HTML/SVG 文件可直接预览，支持 Canvas、WebGL、全屏、源码、下载、停止和重新运行；离屏及隐藏会话自动暂停。可按需开启固定版本的 Chart.js、Three.js、React 等外部库，画面提出的后续请求经用户点击后加入输入框；修改项目中的原文件后可刷新预览。Chat/Code 空的置顶、聊天/项目及最近分组自动隐藏。修复小容量访客磁盘无法上传附件：预留空间改为总容量的 10%，最多 512 MB，空间不足时显示所需与可用容量；单个附件上限仍为 256 MiB。修复打断、停止及立即发送可能留下旧进程、导致会话记录分叉的问题，新回复等待旧进程退出，停止失败时保留待发送消息。需要 WebDesktop 3.0.3，无需升级主程序。"
+    },
     "1.0.8": {
       "tag": "claudeweb-v1.0.8",
       "commit": "b72c2ef2d499ddf65384f7b7b50b04a097f8c76b",
