@@ -1,8 +1,28 @@
 {
   "schema": 1,
   "repository": "git@github.com:isAliceYoung/fa.git",
-  "latest": "1.0.7",
+  "latest": "1.0.8",
   "versions": {
+    "1.0.8": {
+      "tag": "claudeweb-v1.0.8",
+      "commit": "b72c2ef2d499ddf65384f7b7b50b04a097f8c76b",
+      "source_commit": "3486762be2b8200d13aa4a6b361eacb8c6f54c4d",
+      "archive": {
+        "name": "claudeweb-1.0.8-linux-x64.tar.xz",
+        "bytes": 36621956,
+        "sha256": "99fc055c25b48d69a7379097faed83857e26a9e4658c3b9d80cb371aee43526f"
+      },
+      "parts": [
+        {
+          "name": "claudeweb-1.0.8-linux-x64.tar.xz.part00",
+          "bytes": 36621956,
+          "sha256": "99fc055c25b48d69a7379097faed83857e26a9e4658c3b9d80cb371aee43526f"
+        }
+      ],
+      "unpacked_bytes": 306266625,
+      "requires_webdesktop": "3.0.3",
+      "notes": "聊天附件单个文件上限提升到 256 MiB，采用 8 MiB 分片上传并自动重试失败分片。上传时附件卡片显示百分比并置灰，可点击卡片上的 × 或进度条旁的取消按钮中止本次发送，输入文字和附件保留。项目「…」菜单新增独立的「文件管理」页，可查看上传文件的路径、时间、大小和类型，下载原文件或确认后从服务器删除；历史附件按对话记录归入项目。备份继续包含附件，并保存项目归属记录，兼容旧备份。未完成上传两小时后自动清理，完整附件保留至手动删除。需要 WebDesktop 3.0.3，无需升级 WebDesktop 主程序。"
+    },
     "1.0.7": {
       "tag": "claudeweb-v1.0.7",
       "commit": "b22e137750013fc5b922c260907bcf40312e4e76",
