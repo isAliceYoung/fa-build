@@ -1,8 +1,28 @@
 {
   "schema": 1,
   "repository": "git@github.com:isAliceYoung/fa.git",
-  "latest": "1.0.5",
+  "latest": "1.0.6",
   "versions": {
+    "1.0.6": {
+      "tag": "claudeweb-v1.0.6",
+      "commit": "c1e63ed4d8d6bf60b72b0a249255004a07b31a63",
+      "source_commit": "54a37828e2bb115d950009de37e47551c26a1e6e",
+      "archive": {
+        "name": "claudeweb-1.0.6-linux-x64.tar.xz",
+        "bytes": 36495540,
+        "sha256": "020c0529ea4ba555f90e2ce8a6d45251035bcc2cb3eb0b7934df4f888bdfb24f"
+      },
+      "parts": [
+        {
+          "name": "claudeweb-1.0.6-linux-x64.tar.xz.part00",
+          "bytes": 36495540,
+          "sha256": "020c0529ea4ba555f90e2ce8a6d45251035bcc2cb3eb0b7934df4f888bdfb24f"
+        }
+      ],
+      "unpacked_bytes": 305921949,
+      "requires_webdesktop": "3.0.3",
+      "notes": "设置新增「关于Claude」：填写 Claude 对你的称呼（写入用户级 CLAUDE.md，只改自己的一段），选择回复风格（默认、解释型、学习型、主动型或 output-styles 中的自定义风格），开关自动记忆、设置记忆存放目录、开关后台整理记忆（写入 Claude 的 settings.json，与命令行 /memory 相同）。外观新增「默认对话视图」：标准、思考、详细。「任务与会话」新增自动归档不活跃的会话（从不、1/3/7/14/30 天），正在运行、置顶和有待发送定时消息的会话不会被归档；「下一轮提示建议」开关移到这里。新聊天问候语改为中文并新增两句，咖啡和月光两句不再带名字；左下角设置按钮改为齿轮图标。需要 WebDesktop 3.0.3。"
+    },
     "1.0.5": {
       "tag": "claudeweb-v1.0.5",
       "commit": "eb88437ede483c81a8d8df0296c5c8f570c3c722",
