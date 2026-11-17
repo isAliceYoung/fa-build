@@ -1,8 +1,28 @@
 {
   "schema": 1,
   "repository": "git@github.com:isAliceYoung/fa.git",
-  "latest": "1.0.9",
+  "latest": "1.0.11",
   "versions": {
+    "1.0.11": {
+      "tag": "claudeweb-v1.0.11",
+      "commit": "ebd60f3ac0cd9f15b39e103a8efcf632bbdf0a77",
+      "source_commit": "d0a18355814fc40e251771a2212517ec5fb656ac",
+      "archive": {
+        "name": "claudeweb-1.0.11-linux-x64.tar.xz",
+        "bytes": 36670720,
+        "sha256": "018f2722a0a69458c7fae5ad4ff2acf4f7fe7d0c64b1e6b09afcd94f9b855049"
+      },
+      "parts": [
+        {
+          "name": "claudeweb-1.0.11-linux-x64.tar.xz.part00",
+          "bytes": 36670720,
+          "sha256": "018f2722a0a69458c7fae5ad4ff2acf4f7fe7d0c64b1e6b09afcd94f9b855049"
+        }
+      ],
+      "unpacked_bytes": 306490239,
+      "requires_webdesktop": "3.0.3",
+      "notes": "多台设备可以同时登录：在「设置 > 关于」查看登录这台 WebDesktop 的所有设备，可踢出其他设备；有新设备登录时右上角提示「新设备加入」（需要 WebDesktop 3.0.4，在 3.0.3 上不显示）。新聊天的模型和思考强度显示实际名称，不再笼统显示「默认」；手机上模型菜单不再超出屏幕。Code 首页的「概览」「模型」在用量插件停止后能重新加载，短暂失败会自动重试一次。包含原定 1.0.10 的修复：HTML 片段也能在会话里直接预览和交互。"
+    },
     "1.0.9": {
       "tag": "claudeweb-v1.0.9",
       "commit": "e770fbbc3c61fc191b96b2c0528fc500c83992f3",

@@ -1,12 +1,12 @@
 # WebDesktop Public Bootstrap
 
-## WebDesktop 3.0.3 and ClaudeWeb 1.0.3
+## WebDesktop 3.0.4 and ClaudeWeb 1.0.11
 
-**3.0.3 is the default for new installations.** ClaudeWeb 1.0.3 is registered as the latest prebuilt runtime and requires WebDesktop 3.0.3. Update WebDesktop in Settings → 更新 first, then ClaudeWeb in Settings → 关于 → 检查更新. On WebDesktop 3.0.1 / 3.0.2 the installer continues to select compatible ClaudeWeb 1.0.2; existing version entries remain available.
+**3.0.4 is the default for new installations.** ClaudeWeb 1.0.11 is registered as the latest prebuilt runtime and requires WebDesktop 3.0.3 or later. Update WebDesktop in Settings → 更新 first (on the main device), then ClaudeWeb in Settings → 关于 → 检查更新. On WebDesktop 3.0.1 / 3.0.2 the installer continues to select compatible ClaudeWeb 1.0.2; existing version entries remain available.
 
-ClaudeWeb's globe button opens the desktop's existing Chromium in the right panel, including over SSH. Opening it on one side takes it over from the other. Claude and terminal commands run as that same user and can control the logged-in browser. The browser and terminal keep running after Back or collapsing the panel; Close ends them. Code's new-chat home adds token history and a bottom project picker, Chat adds a greeting and larger input, and each mode has its own sidebar list while Pinned and Recent remain shared. Switching modes restores the previous conversation.
+Up to three devices can be signed in at once. When another device is signed in, a new login (desktop, ClaudeWeb or CMCP) chooses 加入 (keep the other devices and CMCP) or 接管 (sign every other device out, CMCP included, after a confirmation); with three signed in, one is picked to sign out first. Settings → 登录设备 (desktop) and Settings → 关于 (ClaudeWeb) list the devices and can sign them out, and a 「新设备加入」 notice appears when another device signs in. System updates run only on the main device. ClaudeWeb 1.0.11 also shows the actual model and thinking level in the composer, keeps menus on screen on phones, reloads the Code home usage panels after the usage plugin stopped, and previews HTML fragments in chats.
 
-Both published releases and their SHA-256 digests were checked against the fixed source/runtime tag commits. ClaudeWeb's runtime build and tests passed in CI. The WebDesktop validation run completed its executed test steps, but artifact uploads failed because the GitHub artifact storage quota was exceeded; the dependent jobs and the build's later HTTP readiness step were skipped. A real VPS upgrade and real browser/clipboard acceptance for this version are not yet verified.
+Both published releases and their SHA-256 digests were checked against the fixed source/runtime tag commits. ClaudeWeb's runtime build and tests passed in CI. The WebDesktop validation run passed every executed test step; artifact uploads failed because the GitHub artifact storage quota is exceeded, so the dependent VM browser jobs were skipped. A real VPS upgrade and real multi-device sign-in for this version are not yet verified.
 
 ## WebDesktop 3.0.2 and ClaudeWeb 1.0.1
 
@@ -182,7 +182,8 @@ After GitHub read authorization, the bootstrap fetches the latest official versi
 
 | Input | Fixed commit | Installer |
 | --- | --- | --- |
-| `3.0.3` | `b93409dcdfeb9c32aff15630886b4950e47cfec0` (`v3.0.3`) | Current default. ClaudeWeb 1.0.3, shared desktop browser, Code / Chat homes and usage dashboard. |
+| `3.0.4` | `70122552d834695a4660d3c83af0d940e6fec899` (`v3.0.4`) | Current default. Up to three devices signed in at once (加入 / 接管), login device list. |
+| `3.0.3` | `b93409dcdfeb9c32aff15630886b4950e47cfec0` (`v3.0.3`) | ClaudeWeb 1.0.3, shared desktop browser, Code / Chat homes and usage dashboard. |
 | `3.0.2` | `0a50d7f5b8f347f379792c1a04a1ad6cff89bd6b` (`v3.0.2`) | Prebuilt ClaudeWeb and cleanup of replaced programs. |
 | `3.0.1` | `a499ba0424f1b9c1e0cbede47bc85328f1044951` (`v3.0.1`) | First stable prebuilt ClaudeWeb installation. |
 | `3.0.0` | `620e652912a409c5e743e2185ffd36c5aa033d58` (`v3.0.0`) | **测试版，请勿安装。** Not the default. |
