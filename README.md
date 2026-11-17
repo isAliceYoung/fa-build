@@ -1,12 +1,12 @@
 # WebDesktop Public Bootstrap
 
-## WebDesktop 3.0.4 and ClaudeWeb 1.0.11
+## WebDesktop 3.0.5 and ClaudeWeb 1.0.12
 
-**3.0.4 is the default for new installations.** ClaudeWeb 1.0.11 is registered as the latest prebuilt runtime and requires WebDesktop 3.0.3 or later. Update WebDesktop in Settings → 更新 first (on the main device), then ClaudeWeb in Settings → 关于 → 检查更新. On WebDesktop 3.0.1 / 3.0.2 the installer continues to select compatible ClaudeWeb 1.0.2; existing version entries remain available.
+**3.0.5 is the default for new installations.** ClaudeWeb 1.0.12 is the latest prebuilt runtime and requires WebDesktop 3.0.3 or later. Update WebDesktop on the main device in Settings, then ClaudeWeb in Settings / About / Check for updates. Hard-refresh existing tabs after updating. WebDesktop 3.0.1 / 3.0.2 continue to select compatible ClaudeWeb 1.0.2; existing version entries remain available.
 
-Up to three devices can be signed in at once. When another device is signed in, a new login (desktop, ClaudeWeb or CMCP) chooses 加入 (keep the other devices and CMCP) or 接管 (sign every other device out, CMCP included, after a confirmation); with three signed in, one is picked to sign out first. Settings → 登录设备 (desktop) and Settings → 关于 (ClaudeWeb) list the devices and can sign them out, and a 「新设备加入」 notice appears when another device signs in. System updates run only on the main device. ClaudeWeb 1.0.11 also shows the actual model and thinking level in the composer, keeps menus on screen on phones, reloads the Code home usage panels after the usage plugin stopped, and previews HTML fragments in chats.
+ClaudeWeb 1.0.12 fixes Code home Overview / Models returning HTTP 404 when an older user usage plugin shadows the bundled implementation. History statistics use the paired bundled implementation, with on-demand startup and recovery after the worker exits. Model controls show concrete names such as Opus 5.5 without SDK default instructions or duplicate choices. New Chat / Code homes keep the right inspector closed initially. HTML / Canvas preview remains available. WebDesktop 3.0.5 changes the ClaudeWeb sign-in headings and browser titles to ClaudeWeb and uses an empty favicon; the existing multi-device login behavior is preserved.
 
-Both published releases and their SHA-256 digests were checked against the fixed source/runtime tag commits. ClaudeWeb's runtime build and tests passed in CI. The WebDesktop validation run passed every executed test step; artifact uploads failed because the GitHub artifact storage quota is exceeded, so the dependent VM browser jobs were skipped. A real VPS upgrade and real multi-device sign-in for this version are not yet verified.
+Published release assets were checked against their fixed tags and SHA-256 digests. ClaudeWeb's full test and Debian runtime build passed in CI. WebDesktop's validation encountered GitHub's artifact-storage quota; inspect the linked CI run for executed checks and skipped dependent VM jobs. A real upgrade and history-panel acceptance on the user's VPS remain pending.
 
 ## WebDesktop 3.0.2 and ClaudeWeb 1.0.1
 
@@ -182,7 +182,8 @@ After GitHub read authorization, the bootstrap fetches the latest official versi
 
 | Input | Fixed commit | Installer |
 | --- | --- | --- |
-| `3.0.4` | `70122552d834695a4660d3c83af0d940e6fec899` (`v3.0.4`) | Current default. Up to three devices signed in at once (加入 / 接管), login device list. |
+| `3.0.5` | `19f539f5d40bec518dfabe2b4b4de0b94e1b4551` (`v3.0.5`) | Current default. ClaudeWeb sign-in branding, paired with ClaudeWeb 1.0.12 history/model/home fixes. |
+| `3.0.4` | `70122552d834695a4660d3c83af0d940e6fec899` (`v3.0.4`) | Up to three devices signed in at once (加入 / 接管), login device list. |
 | `3.0.3` | `b93409dcdfeb9c32aff15630886b4950e47cfec0` (`v3.0.3`) | ClaudeWeb 1.0.3, shared desktop browser, Code / Chat homes and usage dashboard. |
 | `3.0.2` | `0a50d7f5b8f347f379792c1a04a1ad6cff89bd6b` (`v3.0.2`) | Prebuilt ClaudeWeb and cleanup of replaced programs. |
 | `3.0.1` | `a499ba0424f1b9c1e0cbede47bc85328f1044951` (`v3.0.1`) | First stable prebuilt ClaudeWeb installation. |

@@ -2,17 +2,18 @@
   "schema": 1,
   "repository": "git@github.com:isAliceYoung/fa.git",
   "branch": "feature/CC",
-  "commit": "70122552d834695a4660d3c83af0d940e6fec899",
+  "commit": "19f539f5d40bec518dfabe2b4b4de0b94e1b4551",
   "entrypoint": "webdesktop-deploy/scripts/cloudcli_install.py",
   "files": {
     "webdesktop-deploy/scripts/cloudcli_install.py": "7309f51e4a946d4b0d237970e3fff7b870aa9af1be06db27be9bd948c6bd4940",
     "webdesktop-deploy/scripts/cloudflare_domain.py": "2eb6fefa248f5c875c7c5a12213413c4f32bb7efed5cbec27e204ecc4b49035e",
     "webdesktop-deploy/scripts/domain_contract.py": "beff48455fa4c4e4b461e01248dade60a1ad73aa2c0de43b96892cee59a47c19",
-    "webdesktop-deploy/cloudcli/cloudcli.patch": "ed657122e88e471737f88e9e9ca57c643103ba803a6d0d459e9e7ccf04f0a463",
+    "webdesktop-deploy/cloudcli/cloudcli.patch": "547fcf2d08ca1193b3ed60f85f84ed21fb3a3bb743791d655192926dd6aa2472",
     "webdesktop-deploy/scripts/claudeweb_release.py": "e3f14ef6ccf6a1ade34a685f80f950f0649a1d9f50a01dccb77e47518803b27c",
     "webdesktop-deploy/scripts/private_repo.py": "af2ac752783f3fbe045d49e69598d05d702f9c6a9680256d1263af060f323d9f"
   },
   "supported_versions": {
+    "3.0.5": "19f539f5d40bec518dfabe2b4b4de0b94e1b4551",
     "3.0.4": "70122552d834695a4660d3c83af0d940e6fec899",
     "3.0.3": "b93409dcdfeb9c32aff15630886b4950e47cfec0",
     "3.0.2": "0a50d7f5b8f347f379792c1a04a1ad6cff89bd6b",

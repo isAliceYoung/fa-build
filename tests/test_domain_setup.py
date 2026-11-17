@@ -26,12 +26,12 @@ class CurrentMetadata(unittest.TestCase):
     def test_published_domain_metadata_matches_registered_immutable_release(self):
         value=D.metadata(UI.tools)
         catalogue=UI.metadata()
-        self.assertEqual(set(value['supported_versions']),{'1.5.0','1.6.0','1.7.0','1.8.0','1.8.1','1.9.0','1.10.0','1.10.1','1.10.2','1.10.3','1.11.0','1.11.1','1.11.2','1.12.1','2.0.0','3.0.0','3.0.1','3.0.2','3.0.3','3.0.4'})
+        self.assertEqual(set(value['supported_versions']),{'1.5.0','1.6.0','1.7.0','1.8.0','1.8.1','1.9.0','1.10.0','1.10.1','1.10.2','1.10.3','1.11.0','1.11.1','1.11.2','1.12.1','2.0.0','3.0.0','3.0.1','3.0.2','3.0.3','3.0.4','3.0.5'})
         for version, commit in value['supported_versions'].items():
             self.assertEqual(commit,catalogue['versions'][version]['commit'])
-        # 7012255 is the 3.0.4 release itself: the same domain code with 3.0.4 in the binding whitelist.
-        self.assertEqual(value['commit'],'70122552d834695a4660d3c83af0d940e6fec899')
-        self.assertEqual(value['commit'],value['supported_versions']['3.0.4'])
+        # 19f539f is the 3.0.5 release itself: the same domain code with 3.0.5 in the binding whitelist.
+        self.assertEqual(value['commit'],'19f539f5d40bec518dfabe2b4b4de0b94e1b4551')
+        self.assertEqual(value['commit'],value['supported_versions']['3.0.5'])
         self.assertNotEqual(value['commit'],value['supported_versions']['1.8.1'])
         self.assertNotEqual(value['commit'],value['supported_versions']['1.8.0'])
         self.assertNotEqual(value['commit'],value['supported_versions']['1.7.0'])

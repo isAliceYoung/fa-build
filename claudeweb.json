@@ -1,8 +1,28 @@
 {
   "schema": 1,
   "repository": "git@github.com:isAliceYoung/fa.git",
-  "latest": "1.0.11",
+  "latest": "1.0.12",
   "versions": {
+    "1.0.12": {
+      "tag": "claudeweb-v1.0.12",
+      "commit": "91f0e4c8e9fc2779883c7a754e62f7558d782839",
+      "source_commit": "19f539f5d40bec518dfabe2b4b4de0b94e1b4551",
+      "archive": {
+        "name": "claudeweb-1.0.12-linux-x64.tar.xz",
+        "bytes": 36674636,
+        "sha256": "1502c29b21aa67dd5e27a19eab38571292600b05461c8c8ed0fa1bd89add32dc"
+      },
+      "parts": [
+        {
+          "name": "claudeweb-1.0.12-linux-x64.tar.xz.part00",
+          "bytes": 36674636,
+          "sha256": "1502c29b21aa67dd5e27a19eab38571292600b05461c8c8ed0fa1bd89add32dc"
+        }
+      ],
+      "unpacked_bytes": 306524918,
+      "requires_webdesktop": "3.0.3",
+      "notes": "修复 Code 新聊天页「概览」「模型」在旧用户插件覆盖内置统计插件时持续报 404：历史统计使用随 ClaudeWeb 配套的内置实现，支持按需启动与退出后恢复。模型按钮与列表只显示实际模型名称（如 Opus 5.5），去掉 SDK 的 default 说明和重复选项。Chat / Code 新聊天页右侧栏默认收起，仍可手动展开。包含此前的 HTML / Canvas 交互预览；更新后请强制刷新已打开的标签页。登录页改名及移除图标需配套 WebDesktop 3.0.5。"
+    },
     "1.0.11": {
       "tag": "claudeweb-v1.0.11",
       "commit": "ebd60f3ac0cd9f15b39e103a8efcf632bbdf0a77",
