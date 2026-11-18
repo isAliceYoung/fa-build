@@ -1,8 +1,28 @@
 {
   "schema": 1,
   "repository": "git@github.com:isAliceYoung/fa.git",
-  "latest": "1.0.13",
+  "latest": "1.0.15",
   "versions": {
+    "1.0.15": {
+      "tag": "claudeweb-v1.0.15",
+      "commit": "561566c526ad52c6dabf9a29dd6e7254c5b20171",
+      "source_commit": "489d6fba64b832bbb4564289474176872dc3540c",
+      "archive": {
+        "name": "claudeweb-1.0.15-linux-x64.tar.xz",
+        "bytes": 36771848,
+        "sha256": "dd23d106d11c6a1751241741991e0f8cca7cc7822b7534f492cb3c314969aad6"
+      },
+      "parts": [
+        {
+          "name": "claudeweb-1.0.15-linux-x64.tar.xz.part00",
+          "bytes": 36771848,
+          "sha256": "dd23d106d11c6a1751241741991e0f8cca7cc7822b7534f492cb3c314969aad6"
+        }
+      ],
+      "unpacked_bytes": 307071770,
+      "requires_webdesktop": "3.0.3",
+      "notes": "新增项目记忆：在 Code 项目内选中文字可编辑后写入项目 CLAUDE.md，右侧记忆默认收起，支持查看原文来源、编辑、删除确认及跳转来源会话，同一项目会话共享。保留已有文件内容，保存时检测其他设备或编辑器的修改，包括从旧侧栏打开编辑的情况；冲突后保留草稿供核对重试。已发送消息的引用改为紧凑的第一条引用、第二条引用标签，悬停显示原文，点击定位，不再显示引用 JSON，并兼容旧消息。侧边聊天输入框移除黑色焦点框和手动拖拽角，随文字自动增减高度。1.0.14 为未进入更新目录的候选构建，本版包含最终并发保护。更新后请强制刷新已打开的标签页。"
+    },
     "1.0.13": {
       "tag": "claudeweb-v1.0.13",
       "commit": "a1432968a88b3fcb7d97c60f338903a1bc087a8d",
