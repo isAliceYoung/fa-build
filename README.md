@@ -1,12 +1,12 @@
 # WebDesktop Public Bootstrap
 
-## WebDesktop 3.0.5 and ClaudeWeb 1.0.12
+## WebDesktop 3.0.6 and ClaudeWeb 1.0.13
 
-**3.0.5 is the default for new installations.** ClaudeWeb 1.0.12 is the latest prebuilt runtime and requires WebDesktop 3.0.3 or later. Update WebDesktop on the main device in Settings, then ClaudeWeb in Settings / About / Check for updates. Hard-refresh existing tabs after updating. WebDesktop 3.0.1 / 3.0.2 continue to select compatible ClaudeWeb 1.0.2; existing version entries remain available.
+**3.0.6 is the default for new installations.** ClaudeWeb 1.0.13 is the latest prebuilt runtime and requires WebDesktop 3.0.3 or later; the full idle sign-out policy needs 3.0.6. Update WebDesktop on the main device in Settings, then ClaudeWeb in Settings / About / Check for updates. Hard-refresh existing tabs after updating. WebDesktop 3.0.1 / 3.0.2 continue to select compatible ClaudeWeb 1.0.2; existing version entries remain available.
 
-ClaudeWeb 1.0.12 fixes Code home Overview / Models returning HTTP 404 when an older user usage plugin shadows the bundled implementation. History statistics use the paired bundled implementation, with on-demand startup and recovery after the worker exits. Model controls show concrete names such as Opus 5.5 without SDK default instructions or duplicate choices. New Chat / Code homes keep the right inspector closed initially. HTML / Canvas preview remains available. WebDesktop 3.0.5 changes the ClaudeWeb sign-in headings and browser titles to ClaudeWeb and uses an empty favicon; the existing multi-device login behavior is preserved.
+WebDesktop 3.0.6 shows guest IPs from trusted gateway sources in the device list, makes stopping CMCP sign out only its own web login (other devices stay signed in), and signs manual web logins out after 1 hour idle per device; real use renews it, and a busy ClaudeWeb main session counts as use. ClaudeWeb 1.0.13 adds quoting selected text, floating side chats managed from the right panel (Claude only; exported separately, not part of backups), parent and outside folders in the file panel with a remembered download location, and fixes message display delay, edit after interrupt, single sidebar highlight and connector status.
 
-Published release assets were checked against their fixed tags and SHA-256 digests. ClaudeWeb's full test and Debian runtime build passed in CI. WebDesktop's validation encountered GitHub's artifact-storage quota; inspect the linked CI run for executed checks and skipped dependent VM jobs. A real upgrade and history-panel acceptance on the user's VPS remain pending.
+Published release assets were checked against their fixed tags and SHA-256 digests. ClaudeWeb's full test and Debian runtime build passed in CI. WebDesktop's validation encountered GitHub's artifact-storage quota; inspect the linked CI run for executed checks and skipped dependent VM jobs. A real upgrade on the user's VPS remains pending.
 
 ## WebDesktop 3.0.2 and ClaudeWeb 1.0.1
 
@@ -182,7 +182,8 @@ After GitHub read authorization, the bootstrap fetches the latest official versi
 
 | Input | Fixed commit | Installer |
 | --- | --- | --- |
-| `3.0.5` | `19f539f5d40bec518dfabe2b4b4de0b94e1b4551` (`v3.0.5`) | Current default. ClaudeWeb sign-in branding, paired with ClaudeWeb 1.0.12 history/model/home fixes. |
+| `3.0.6` | `a5754e620e478406979b77c1bcae49775d719877` (`v3.0.6`) | Current default. Guest IPs, CMCP stop ends only its login, 1 hour idle sign-out; paired with ClaudeWeb 1.0.13 quotes and side chats. |
+| `3.0.5` | `19f539f5d40bec518dfabe2b4b4de0b94e1b4551` (`v3.0.5`) | ClaudeWeb sign-in branding, paired with ClaudeWeb 1.0.12 history/model/home fixes. |
 | `3.0.4` | `70122552d834695a4660d3c83af0d940e6fec899` (`v3.0.4`) | Up to three devices signed in at once (加入 / 接管), login device list. |
 | `3.0.3` | `b93409dcdfeb9c32aff15630886b4950e47cfec0` (`v3.0.3`) | ClaudeWeb 1.0.3, shared desktop browser, Code / Chat homes and usage dashboard. |
 | `3.0.2` | `0a50d7f5b8f347f379792c1a04a1ad6cff89bd6b` (`v3.0.2`) | Prebuilt ClaudeWeb and cleanup of replaced programs. |

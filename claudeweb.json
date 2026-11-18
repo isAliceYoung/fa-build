@@ -1,8 +1,28 @@
 {
   "schema": 1,
   "repository": "git@github.com:isAliceYoung/fa.git",
-  "latest": "1.0.12",
+  "latest": "1.0.13",
   "versions": {
+    "1.0.13": {
+      "tag": "claudeweb-v1.0.13",
+      "commit": "a1432968a88b3fcb7d97c60f338903a1bc087a8d",
+      "source_commit": "a5754e620e478406979b77c1bcae49775d719877",
+      "archive": {
+        "name": "claudeweb-1.0.13-linux-x64.tar.xz",
+        "bytes": 36741524,
+        "sha256": "f2d7ecf6b178dc2214aed257d4a002cae01dd3b23d75589c3fa3f063ee421a13"
+      },
+      "parts": [
+        {
+          "name": "claudeweb-1.0.13-linux-x64.tar.xz.part00",
+          "bytes": 36741524,
+          "sha256": "f2d7ecf6b178dc2214aed257d4a002cae01dd3b23d75589c3fa3f063ee421a13"
+        }
+      ],
+      "unpacked_bytes": 306897208,
+      "requires_webdesktop": "3.0.3",
+      "notes": "新增会话文字引用与独立浮动侧边聊天：引用可预览、移除，旁聊可拖动、缩放、最小化、删除确认，并在右侧栏按顺序管理、预览提问和跳转原文；外观设置增加旁聊字体大小。修复发送消息延迟显示、打断后缺少编辑入口、侧栏多处同时高亮及连接器状态不准确。文件面板可返回上级目录并在项目外按系统账户权限读写，修复新建重复提交、提示语言及下载位置选择，记住上次保存目录。包含此前尚未发布的访客 IP、CMCP 停止后清理对应登录、手动网页登录闲置 1 小时退出功能（需配套 WebDesktop 3.0.6）。更新后请强制刷新已打开的标签页。"
+    },
     "1.0.12": {
       "tag": "claudeweb-v1.0.12",
       "commit": "91f0e4c8e9fc2779883c7a754e62f7558d782839",
