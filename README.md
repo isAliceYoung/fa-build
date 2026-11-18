@@ -1,10 +1,12 @@
 # WebDesktop Public Bootstrap
 
-## WebDesktop 3.0.5 and ClaudeWeb 1.0.13 (3.0.6 withdrawn)
+## WebDesktop 3.0.7 and ClaudeWeb 1.0.13
 
-**3.0.5 is the default for new installations. WebDesktop 3.0.6 has been withdrawn:** its in-app update stops in maintenance (`RECOVERY_REQUIRED`, desktop and CMCP unreachable) because 3.0.6 writes a new login setting when it starts, which the updater correctly reports as a database change. A fixed 3.0.7 will follow. If a VPS is stuck after updating to 3.0.6, run as root `bash /opt/webdesktop/source/webdesktop-deploy/update.sh status`; when the transaction is `RECOVERY_REQUIRED` with `USER_DATABASE_CHANGED`, `bash /opt/webdesktop/source/webdesktop-deploy/update.sh resolve --keep=previous` returns to 3.0.5 without restoring or deleting data. (`--keep installed` cannot succeed in this state.)
+**3.0.7 is the default for new installations.** It fixes the withdrawn 3.0.6, whose in-app update stopped in maintenance (`RECOVERY_REQUIRED`, desktop and CMCP unreachable) because it wrote a new login setting when it started. 3.0.7 writes nothing to the database at startup and keeps the 3.0.6 features: guest IPs in the device list, stopping CMCP signs out only its own web login, and manual web logins sign out after 1 hour idle per device. Update WebDesktop on the main device in Settings. If an update still stops in maintenance, run as root `bash /opt/webdesktop/source/webdesktop-deploy/update.sh status`, then `bash /opt/webdesktop/source/webdesktop-deploy/update.sh resolve --keep=previous` returns to the previous version without restoring or deleting data.
 
-ClaudeWeb 1.0.13 is the latest prebuilt runtime and requires WebDesktop 3.0.3 or later; update it in Settings / About / Check for updates and hard-refresh open tabs. It adds quoting selected text, floating side chats, parent and outside folders in the file panel, and fixes message display delay, edit after interrupt, sidebar highlight and connector status. Its 1-hour idle sign-out stays off until a WebDesktop version with that policy is installed. WebDesktop 3.0.1 / 3.0.2 continue to select compatible ClaudeWeb 1.0.2; existing version entries remain available.
+ClaudeWeb 1.0.13 is the latest prebuilt runtime and requires WebDesktop 3.0.3 or later; update it in Settings / About / Check for updates and hard-refresh open tabs. WebDesktop 3.0.1 / 3.0.2 continue to select compatible ClaudeWeb 1.0.2; existing version entries remain available.
+
+The published release asset was checked against its fixed tag and SHA-256 digest. The real 3.0.5 -> 3.0.7 in-app update is being verified on the maintainer's VPS; an automated previous-release update test is pending.
 
 ## WebDesktop 3.0.2 and ClaudeWeb 1.0.1
 
@@ -180,7 +182,8 @@ After GitHub read authorization, the bootstrap fetches the latest official versi
 
 | Input | Fixed commit | Installer |
 | --- | --- | --- |
-| `3.0.5` | `19f539f5d40bec518dfabe2b4b4de0b94e1b4551` (`v3.0.5`) | Current default. ClaudeWeb sign-in branding, paired with ClaudeWeb 1.0.12 history/model/home fixes. |
+| `3.0.7` | `fddb2360fec0d62bd2010b8158ecc1730b3064fa` (`v3.0.7`) | Current default. Fixes the withdrawn 3.0.6 update hold; guest IPs, CMCP stop ends only its login, 1 hour idle sign-out. |
+| `3.0.5` | `19f539f5d40bec518dfabe2b4b4de0b94e1b4551` (`v3.0.5`) | ClaudeWeb sign-in branding, paired with ClaudeWeb 1.0.12 history/model/home fixes. |
 | `3.0.4` | `70122552d834695a4660d3c83af0d940e6fec899` (`v3.0.4`) | Up to three devices signed in at once (加入 / 接管), login device list. |
 | `3.0.3` | `b93409dcdfeb9c32aff15630886b4950e47cfec0` (`v3.0.3`) | ClaudeWeb 1.0.3, shared desktop browser, Code / Chat homes and usage dashboard. |
 | `3.0.2` | `0a50d7f5b8f347f379792c1a04a1ad6cff89bd6b` (`v3.0.2`) | Prebuilt ClaudeWeb and cleanup of replaced programs. |
