@@ -30,9 +30,8 @@ beta=module('version_beta',ROOT/'scripts/beta_install.py')
 class Versions(unittest.TestCase):
     def test_catalogue_has_reviewed_fixed_versions(self):
         m=ui.metadata()
-        self.assertEqual(set(m['versions']),{'3.0.6','3.0.5','3.0.4','3.0.3','3.0.2','3.0.1','3.0.0','2.0.0','1.12.1','1.11.2','1.11.1','1.11.0','1.10.3','1.10.2','1.10.1','1.10.0','1.9.0','1.8.1','1.8.0','1.7.0','1.6.0','1.5.0','1.4.0','1.3.0','1.2.0','1.1.0','1.0.0','beta0.1.0'})
-        self.assertEqual(m['default_version'],'3.0.6')  # 1.12.1 and 3.0.0 are test releases, never the default.
-        self.assertEqual(m['versions']['3.0.6']['commit'],'a5754e620e478406979b77c1bcae49775d719877')
+        self.assertEqual(set(m['versions']),{'3.0.5','3.0.4','3.0.3','3.0.2','3.0.1','3.0.0','2.0.0','1.12.1','1.11.2','1.11.1','1.11.0','1.10.3','1.10.2','1.10.1','1.10.0','1.9.0','1.8.1','1.8.0','1.7.0','1.6.0','1.5.0','1.4.0','1.3.0','1.2.0','1.1.0','1.0.0','beta0.1.0'})
+        self.assertEqual(m['default_version'],'3.0.5')  # 1.12.1 and 3.0.0 are test releases, never the default.
         self.assertEqual(m['versions']['3.0.5']['commit'],'19f539f5d40bec518dfabe2b4b4de0b94e1b4551')
         self.assertEqual(m['versions']['3.0.4']['commit'],'70122552d834695a4660d3c83af0d940e6fec899')
         self.assertEqual(m['versions']['3.0.3']['commit'],'b93409dcdfeb9c32aff15630886b4950e47cfec0')
@@ -77,7 +76,7 @@ class Versions(unittest.TestCase):
             selected=ui.select_version(ui.metadata(),read=lambda _:next(answers))
         self.assertEqual((selected['engine'],selected['branch']),('legacy-beta','main'))
         with contextlib.redirect_stdout(io.StringIO()):
-            for version in ('3.0.6','3.0.5','3.0.4','3.0.3','3.0.2','3.0.1','3.0.0','2.0.0','1.12.1','1.11.2','1.11.1','1.11.0','1.10.3','1.10.2','1.10.1','1.10.0','1.9.0','1.8.1','1.8.0','1.7.0','1.6.0','1.5.0','1.4.0','1.3.0','1.2.0','1.1.0','1.0.0','beta0.1.0'):
+            for version in ('3.0.5','3.0.4','3.0.3','3.0.2','3.0.1','3.0.0','2.0.0','1.12.1','1.11.2','1.11.1','1.11.0','1.10.3','1.10.2','1.10.1','1.10.0','1.9.0','1.8.1','1.8.0','1.7.0','1.6.0','1.5.0','1.4.0','1.3.0','1.2.0','1.1.0','1.0.0','beta0.1.0'):
                 self.assertEqual(ui.select_version(ui.metadata(),version)['version'],version)
             with self.assertRaisesRegex(ValueError,'UNKNOWN_INSTALL_VERSION'):
                 ui.select_version(ui.metadata(),'latest')
@@ -85,7 +84,7 @@ class Versions(unittest.TestCase):
     def test_test_release_is_listed_with_a_warning(self):
         with contextlib.redirect_stdout(io.StringIO()) as output:
             self.assertIsNone(ui.select_version(ui.metadata(),read=lambda _:''))
-        self.assertIn('可安装版本：3.0.6, 3.0.5, 3.0.4, 3.0.3, 3.0.2, 3.0.1, 3.0.0（测试版，请勿安装）, 2.0.0, 1.12.1（测试版，请勿安装）, 1.11.2, ',output.getvalue())
+        self.assertIn('可安装版本：3.0.5, 3.0.4, 3.0.3, 3.0.2, 3.0.1, 3.0.0（测试版，请勿安装）, 2.0.0, 1.12.1（测试版，请勿安装）, 1.11.2, ',output.getvalue())
         self.assertEqual(output.getvalue().count('测试版'),2)
 
     def test_empty_or_eof_selects_nothing(self):
@@ -126,7 +125,7 @@ class Versions(unittest.TestCase):
         self.assertEqual(result['versions']['1.2.0']['commit'],current)
 
     def test_unpublished_tag_is_not_offered_for_installation(self):
-        for missing,default in [('3.0.6', '3.0.5'), ('3.0.5', '3.0.6'), ('3.0.4', '3.0.6'), ('3.0.3', '3.0.6'), ('3.0.2', '3.0.6'), ('3.0.1', '3.0.6'), ('2.0.0', '3.0.6'), ('1.12.1', '3.0.6'), ('1.11.2', '3.0.6'), ('1.11.1', '3.0.6'), ('1.11.0', '3.0.6'), ('1.10.3', '3.0.6'), ('1.10.2', '3.0.6'), ('1.10.1', '3.0.6'), ('1.10.0', '3.0.6'), ('1.9.0', '3.0.6'), ('1.8.1', '3.0.6'), ('1.8.0', '3.0.6'), ('1.7.0', '3.0.6'), ('1.6.0', '3.0.6'), ('1.5.0', '3.0.6')]:
+        for missing,default in [('3.0.5', '3.0.4'), ('3.0.4', '3.0.5'), ('3.0.3', '3.0.5'), ('3.0.2', '3.0.5'), ('3.0.1', '3.0.5'), ('2.0.0', '3.0.5'), ('1.12.1', '3.0.5'), ('1.11.2', '3.0.5'), ('1.11.1', '3.0.5'), ('1.11.0', '3.0.5'), ('1.10.3', '3.0.5'), ('1.10.2', '3.0.5'), ('1.10.1', '3.0.5'), ('1.10.0', '3.0.5'), ('1.9.0', '3.0.5'), ('1.8.1', '3.0.5'), ('1.8.0', '3.0.5'), ('1.7.0', '3.0.5'), ('1.6.0', '3.0.5'), ('1.5.0', '3.0.5')]:
             rows='\n'.join(row for row in self.tag_rows().splitlines() if not row.endswith('/v'+missing))
             result=self.live_catalogue(rows)
             self.assertNotIn(missing,result['versions']);self.assertEqual(result['default_version'],default)
@@ -287,7 +286,7 @@ class LatestCatalogue(unittest.TestCase):
             selected=ui.select_version(available,read=lambda _:'2.1.0')
         self.assertEqual(selected['commit'],'d'*40)
         self.assertEqual(selected['entrypoint_sha256'],'e'*64)
-        self.assertIn('可安装版本：3.0.6, 3.0.5, 3.0.4, 3.0.3, 3.0.2, 3.0.1, 3.0.0（测试版，请勿安装）, 2.1.0, 2.0.0, 1.12.1（测试版，请勿安装）, 1.11.2, 1.11.1, 1.11.0, 1.10.3, 1.10.2, 1.10.1, 1.10.0, 1.9.0, 1.8.1, 1.8.0, 1.7.0',output.getvalue())
+        self.assertIn('可安装版本：3.0.5, 3.0.4, 3.0.3, 3.0.2, 3.0.1, 3.0.0（测试版，请勿安装）, 2.1.0, 2.0.0, 1.12.1（测试版，请勿安装）, 1.11.2, 1.11.1, 1.11.0, 1.10.3, 1.10.2, 1.10.1, 1.10.0, 1.9.0, 1.8.1, 1.8.0, 1.7.0',output.getvalue())
         self.assertNotIn('2.1.0',ui.metadata()['versions'])
 
     def test_authorized_flow_refreshes_then_reprompts_and_installs_new_fixed_version(self):
@@ -403,7 +402,7 @@ class LatestCatalogue(unittest.TestCase):
             git=lambda *args:'\n'.join(item['commit']+'\trefs/tags/'+item['tag'] for item in self.new['versions'].values()))
         with contextlib.redirect_stdout(io.StringIO()):value=ui.available_versions(self.new,source)
         names=list(value['versions'])
-        self.assertEqual(names[:5],['3.0.6','3.0.5','3.0.4','3.0.3','3.0.2'])
+        self.assertEqual(names[:5],['3.0.5','3.0.4','3.0.3','3.0.2','3.0.1'])
         self.assertEqual(names[-1],'beta0.1.0')
 
     def test_unavailable_input_reprompts_until_an_exact_listed_version(self):
