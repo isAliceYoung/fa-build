@@ -1,8 +1,28 @@
 {
   "schema": 1,
   "repository": "git@github.com:isAliceYoung/fa.git",
-  "latest": "1.0.16",
+  "latest": "1.0.17",
   "versions": {
+    "1.0.17": {
+      "tag": "claudeweb-v1.0.17",
+      "commit": "1b7158881f0748fa719f05d85c882057122f0182",
+      "source_commit": "898dc73628d1d667218e9d0e949fd1c847649115",
+      "archive": {
+        "name": "claudeweb-1.0.17-linux-x64.tar.xz",
+        "bytes": 36812620,
+        "sha256": "554794e1cfde7c4a9c23f32177e829188f5e9f9db0d04f39444f36424d85b65c"
+      },
+      "parts": [
+        {
+          "name": "claudeweb-1.0.17-linux-x64.tar.xz.part00",
+          "bytes": 36812620,
+          "sha256": "554794e1cfde7c4a9c23f32177e829188f5e9f9db0d04f39444f36424d85b65c"
+        }
+      ],
+      "unpacked_bytes": 307229719,
+      "requires_webdesktop": "3.0.3",
+      "notes": "一键到底加入缓入缓出滚动动画，手动滚动可打断，到达底部后再收起展开的历史。修复主输入框及旁聊草稿保存与同步竞争导致的丢字、光标跳动。修复旁聊原文虚线滚动漂移，隐藏右侧栏滚动条；引用消息重新编辑恢复为标签，复制只包含引用原文和提问。搜索命中消息同时高亮关键词；重新生成后停止仍可再次编辑。正在停止提示靠右对齐输入框，修复模型子菜单切换时的位置闪动，以及搜索后项目区域消失的问题。更多菜单改名侧边栏，HTML、Markdown、JSON 导出支持选择保存位置；内置命令界面跟随语言。移除额度弹层的临时加载文字，刷新期间保留旧额度并保持外框稳定。包含此前所有已发布功能及此前待发布改动。更新后请强制刷新已打开的标签页。"
+    },
     "1.0.16": {
       "tag": "claudeweb-v1.0.16",
       "commit": "49d263630fc946986a491287a3db9071becbe721",
