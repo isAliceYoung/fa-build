@@ -1,8 +1,28 @@
 {
   "schema": 1,
   "repository": "git@github.com:isAliceYoung/fa.git",
-  "latest": "1.0.15",
+  "latest": "1.0.16",
   "versions": {
+    "1.0.16": {
+      "tag": "claudeweb-v1.0.16",
+      "commit": "49d263630fc946986a491287a3db9071becbe721",
+      "source_commit": "c6bebe1d434416264beb349b8489390e8a7af4dc",
+      "archive": {
+        "name": "claudeweb-1.0.16-linux-x64.tar.xz",
+        "bytes": 36786256,
+        "sha256": "dcd2560ad26560fcacccb01f7b2068c57b67989cf2f71091f743a15d4ae1f63a"
+      },
+      "parts": [
+        {
+          "name": "claudeweb-1.0.16-linux-x64.tar.xz.part00",
+          "bytes": 36786256,
+          "sha256": "dcd2560ad26560fcacccb01f7b2068c57b67989cf2f71091f743a15d4ae1f63a"
+        }
+      ],
+      "unpacked_bytes": 307155308,
+      "requires_webdesktop": "3.0.3",
+      "notes": "整轮回复仅在末尾显示一组复制和模型信息，中断后也保留；思考、工具调用和过程说明可整体折叠，生成中手动收起不会被新内容打开。搜索按匹配消息显示结果，支持加载旧历史后精确定位，搜索与快捷跳转加入缓入缓出动画。右侧栏各区完整展开并整体滚动，修复记忆定时刷新闪动；停止后立即显示正在停止，避免重复点击。修复加号菜单在 Chat、Code、全屏及窗口缩放时的定位；隐藏左侧栏滚动条，正文及加号菜单滚动条默认隐藏、靠近显示。额度环点击立即同步额度并保留加载反馈；左上角刷新显示进行状态，修复标题重命名输入框边框被截断。包含此前所有已发布功能与本轮之前未发布的改动。更新后请强制刷新已打开的标签页。"
+    },
     "1.0.15": {
       "tag": "claudeweb-v1.0.15",
       "commit": "561566c526ad52c6dabf9a29dd6e7254c5b20171",
