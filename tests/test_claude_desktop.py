@@ -5,6 +5,7 @@ import io
 import json
 import os
 from pathlib import Path
+import stat
 import tempfile
 import types
 import unittest
@@ -16,10 +17,11 @@ c = importlib.util.module_from_spec(spec); spec.loader.exec_module(c)
 
 
 class ClaudePackage(unittest.TestCase):
-    def fixture(self, bad_key=False, occupied=False, free=5*1024**3, fail=False):
+    def fixture(self, bad_key=False, occupied=False, free=5*1024**3, fail=False, missing=()):
         temp = tempfile.TemporaryDirectory(); self.addCleanup(temp.cleanup)
         root = Path(temp.name); state = root/'state'; key = root/'keys/key.asc'; source = root/'sources/claude.list'
-        key.parent.mkdir(); source.parent.mkdir()
+        if 'keys' not in missing: key.parent.mkdir()
+        if 'sources' not in missing: source.parent.mkdir()
         if occupied: key.write_bytes(b'unknown existing key')
         calls = []; checks = []
         class Guard:
@@ -29,6 +31,7 @@ class ClaudePackage(unittest.TestCase):
                 state.mkdir(exist_ok=True); yield
             def directory(self, path, **kw):
                 if kw.get('create'): path.mkdir(exist_ok=True)
+                if not path.is_dir(): raise ValueError('MISSING')
             def check_node(self, path, **kw): checks.append(path)
         def require(ok, why):
             if not ok: raise ValueError(why)
@@ -66,6 +69,20 @@ class ClaudePackage(unittest.TestCase):
         self.assertIn('FINGERPRINT', str(error)); self.assertFalse(key.exists()); self.assertFalse(source.exists())
         self.assertFalse(any('claude-desktop' in a for a in calls)); self.assertEqual(json.loads((state/'status.json').read_text())['stage'], 'failed')
 
+    def test_missing_keyring_directory_is_prepared_before_package_install(self):
+        _, state, key, source, calls, _, _, error = self.fixture(missing=('keys',))
+        self.assertIsNone(error)
+        self.assertTrue(key.exists()); self.assertTrue(source.exists())
+        self.assertEqual(json.loads((state/'status.json').read_text())['stage'], 'installed')
+        self.assertTrue(any('claude-desktop' in a for a in calls))
+
+    def test_missing_apt_sources_directory_is_prepared_before_package_install(self):
+        _, state, key, source, calls, _, _, error = self.fixture(missing=('sources',))
+        self.assertIsNone(error)
+        self.assertTrue(key.exists()); self.assertTrue(source.exists())
+        self.assertEqual(json.loads((state/'status.json').read_text())['stage'], 'installed')
+        self.assertTrue(any('claude-desktop' in a for a in calls))
+
     def test_existing_unknown_key_not_overwritten(self):
         _, _, key, source, _, _, _, error = self.fixture(occupied=True)
         self.assertIn('REVIEW_REQUIRED', str(error)); self.assertEqual(key.read_bytes(), b'unknown existing key'); self.assertFalse(source.exists())
@@ -89,6 +106,52 @@ class ClaudePackage(unittest.TestCase):
             def require(ok,why):
                 if not ok:raise ValueError(why)
             with self.assertRaisesRegex(ValueError,'ROOT_REQUIRED'): c.install(types.SimpleNamespace(require=require), mock.Mock())
+
+
+@unittest.skipUnless(os.name == 'posix' and hasattr(os, 'geteuid') and os.geteuid() == 0, 'Linux root filesystem guard checks')
+class ClaudeAptDirectories(unittest.TestCase):
+    def setUp(self):
+        spec = importlib.util.spec_from_file_location('claude_real_private_guard', ROOT/'scripts/private_repo.py')
+        private = importlib.util.module_from_spec(spec); spec.loader.exec_module(private)
+        self.failure = private.Failure
+        temp = tempfile.TemporaryDirectory(prefix='.claude-apt-directory-test-', dir='/root')
+        self.addCleanup(temp.cleanup)
+        self.root = Path(temp.name)
+        self.guard = private.PrivateSource(self.root/'state', self.root/'source', 'git@github.com:isAliceYoung/fa.git')
+
+    def test_new_apt_directories_are_readable_under_private_bootstrap_umask(self):
+        previous = os.umask(0o077)
+        try:
+            for name in ('keyrings', 'sources.list.d'):
+                path = self.root/name
+                c.prepare_apt_directory(self.guard, path)
+                self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o755)
+                self.assertEqual(path.stat().st_uid, 0)
+                before = path.stat()
+                c.prepare_apt_directory(self.guard, path)
+                self.assertEqual(path.stat().st_ino, before.st_ino)
+        finally: os.umask(previous)
+
+    def test_existing_directory_symlink_is_rejected_without_changing_target(self):
+        target = self.root/'outside'; target.mkdir(mode=0o700)
+        path = self.root/'keyrings'; path.symlink_to(target, target_is_directory=True)
+        before = target.stat()
+        with self.assertRaises(self.failure) as failure: c.prepare_apt_directory(self.guard, path)
+        self.assertEqual(failure.exception.code, 'OWNERSHIP')
+        self.assertEqual(target.stat().st_mode, before.st_mode)
+
+    def test_writable_parent_is_rejected_before_directory_creation(self):
+        parent = self.root/'unsafe'; parent.mkdir(); parent.chmod(0o777)
+        path = parent/'sources.list.d'
+        with self.assertRaises(self.failure) as failure: c.prepare_apt_directory(self.guard, path)
+        self.assertEqual(failure.exception.code, 'PERMISSIONS')
+        self.assertFalse(path.exists())
+
+    def test_existing_unsafe_directory_is_not_silently_repaired(self):
+        path = self.root/'keyrings'; path.mkdir(); path.chmod(0o777)
+        with self.assertRaises(self.failure) as failure: c.prepare_apt_directory(self.guard, path)
+        self.assertEqual(failure.exception.code, 'PERMISSIONS')
+        self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o777)
 
 
 if __name__ == '__main__': unittest.main(verbosity=2)

@@ -28,6 +28,21 @@ def fingerprint(text):
     if primary != [FINGERPRINT]: raise ValueError('CLAUDE_SIGNING_FINGERPRINT_MISMATCH')
 
 
+def prepare_apt_directory(guard, path):
+    # Minimal Debian images may omit these APT directories. Validate their
+    # existing ancestors first; create only the requested leaf, never repair
+    # an existing directory or follow an untrusted link. The bootstrap umask
+    # is 077, so explicitly publish a new directory as readable by APT.
+    guard.directory(path.parent, private=False)
+    if not os.path.lexists(path):
+        try: path.mkdir(mode=0o700)
+        except FileExistsError: pass
+        else:
+            guard.check_node(path, directory=True, private=True)
+            path.chmod(0o755)
+    guard.directory(path, private=False)
+
+
 def install(tools, private):
     tools.require(hasattr(os, 'geteuid') and os.geteuid() == 0, 'ROOT_REQUIRED')
     os.umask(0o077)
@@ -66,7 +81,7 @@ def _install(tools, private):
         tools.require(0 < public.stat().st_size <= 65536, 'CLAUDE_SIGNING_KEY_SIZE')
         fingerprint(tools.run(['gpg', '--no-options', '--homedir', work, '--batch', '--with-colons', '--show-keys', public], 15))
         for path, data in ((KEY, public.read_bytes()), (SOURCE, REPOSITORY.encode('ascii'))):
-            guard.directory(path.parent, private=False)
+            prepare_apt_directory(guard, path.parent)
             if os.path.lexists(path):
                 guard.check_node(path, private=False)
                 tools.require(path.read_bytes() == data, 'CLAUDE_EXISTING_APT_CONFIGURATION_REVIEW_REQUIRED')
